@@ -14,7 +14,6 @@ import {
   mapReasonToDamageType,
   mapReasonToSeverity,
 } from "@/data/initialRoadSegments";
-import { cn } from "@/lib/utils";
 
 export function Home() {
   const [showMobileList, setShowMobileList] = useState(false);
@@ -59,102 +58,82 @@ export function Home() {
   return (
     <div className="flex h-full flex-col">
       {/* Stats bar */}
-      <div className="border-b border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-800 dark:bg-gray-900">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-6">
+      <div className="border-b border-gray-200 bg-gray-50 px-2 py-2 dark:border-gray-800 dark:bg-gray-900 sm:px-4 sm:py-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 overflow-x-auto sm:gap-4">
             {/* Total blocked */}
-            <div className="flex items-center gap-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/30">
-                <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+            <div className="flex items-center gap-1 sm:gap-2">
+              <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/30 sm:h-10 sm:w-10">
+                <AlertTriangle className="h-3.5 w-3.5 text-red-600 dark:text-red-400 sm:h-5 sm:w-5" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                <p className="text-base font-bold text-gray-900 dark:text-white sm:text-2xl">
                   {stats.totalBlocked}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="whitespace-nowrap text-[9px] text-gray-500 dark:text-gray-400 sm:text-xs">
                   Roads Affected
                 </p>
               </div>
             </div>
 
             {/* Provinces */}
-            <div className="hidden items-center gap-2 sm:flex">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                <MapPin className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <div className="flex items-center gap-1 sm:gap-2">
+              <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30 sm:h-10 sm:w-10">
+                <MapPin className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400 sm:h-5 sm:w-5" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                <p className="text-base font-bold text-gray-900 dark:text-white sm:text-2xl">
                   {stats.provinces}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="whitespace-nowrap text-[9px] text-gray-500 dark:text-gray-400 sm:text-xs">
                   Provinces
                 </p>
               </div>
             </div>
 
             {/* Flooding */}
-            <div className="hidden items-center gap-2 md:flex">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-100 dark:bg-cyan-900/30">
-                <Droplets className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+            <div className="flex items-center gap-1 sm:gap-2">
+              <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-cyan-100 dark:bg-cyan-900/30 sm:h-10 sm:w-10">
+                <Droplets className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400 sm:h-5 sm:w-5" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                <p className="text-base font-bold text-gray-900 dark:text-white sm:text-2xl">
                   {stats.flooding}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="whitespace-nowrap text-[9px] text-gray-500 dark:text-gray-400 sm:text-xs">
                   Flooding
                 </p>
               </div>
             </div>
 
             {/* Landslides */}
-            <div className="hidden items-center gap-2 lg:flex">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/30">
-                <Mountain className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            <div className="flex items-center gap-1 sm:gap-2">
+              <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/30 sm:h-10 sm:w-10">
+                <Mountain className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 sm:h-5 sm:w-5" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                <p className="text-base font-bold text-gray-900 dark:text-white sm:text-2xl">
                   {stats.landslides}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="whitespace-nowrap text-[9px] text-gray-500 dark:text-gray-400 sm:text-xs">
                   Landslides
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Severity badges + mobile list toggle */}
-          <div className="flex items-center gap-2">
-            {stats.critical > 0 && (
-              <span className="hidden rounded-full bg-red-800 px-2.5 py-1 text-xs font-medium text-white sm:inline-flex">
-                {stats.critical} Critical
-              </span>
+          {/* Mobile list toggle button */}
+          <button
+            onClick={() => setShowMobileList(!showMobileList)}
+            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-gray-200 text-gray-700 transition-colors hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 sm:h-10 sm:w-10 lg:hidden"
+            aria-label={showMobileList ? "Hide road list" : "Show road list"}
+          >
+            {showMobileList ? (
+              <X className="h-4 w-4 sm:h-5 sm:w-5" />
+            ) : (
+              <List className="h-4 w-4 sm:h-5 sm:w-5" />
             )}
-            {stats.high > 0 && (
-              <span className="hidden rounded-full bg-red-600 px-2.5 py-1 text-xs font-medium text-white sm:inline-flex">
-                {stats.high} High
-              </span>
-            )}
-
-            {/* Mobile list toggle button */}
-            <button
-              onClick={() => setShowMobileList(!showMobileList)}
-              className="flex items-center gap-1.5 rounded-lg bg-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 lg:hidden"
-              aria-label={showMobileList ? "Hide road list" : "Show road list"}
-            >
-              {showMobileList ? (
-                <>
-                  <X className="h-4 w-4" />
-                  <span className="hidden sm:inline">Close</span>
-                </>
-              ) : (
-                <>
-                  <List className="h-4 w-4" />
-                  <span className="hidden sm:inline">Roads</span>
-                </>
-              )}
-            </button>
-          </div>
+          </button>
         </div>
       </div>
 
@@ -165,30 +144,19 @@ export function Home() {
           <RoadTable />
         </div>
 
-        {/* Road table - mobile overlay */}
-        <div
-          className={cn(
-            "absolute inset-0 z-20 transform transition-transform duration-300 ease-in-out lg:hidden",
-            showMobileList ? "translate-x-0" : "-translate-x-full"
-          )}
-        >
-          <div className="h-full w-full bg-white dark:bg-gray-900 sm:w-80 sm:border-r sm:border-gray-200 sm:shadow-lg dark:sm:border-gray-700">
+        {/* Map - hidden on mobile when menu is open */}
+        {!showMobileList && (
+          <div className="relative flex-1 lg:flex">
+            <DisasterMap />
+          </div>
+        )}
+
+        {/* Road table - mobile full-screen overlay */}
+        {showMobileList && (
+          <div className="flex-1 bg-white dark:bg-gray-900 lg:hidden">
             <RoadTable />
           </div>
-          {/* Backdrop on mobile when list is open */}
-          <div
-            className={cn(
-              "absolute inset-0 -z-10 bg-black/50 transition-opacity sm:hidden",
-              showMobileList ? "opacity-100" : "opacity-0 pointer-events-none"
-            )}
-            onClick={() => setShowMobileList(false)}
-          />
-        </div>
-
-        {/* Map */}
-        <div className="relative flex-1">
-          <DisasterMap />
-        </div>
+        )}
       </div>
     </div>
   );
