@@ -16,14 +16,14 @@ interface ProvinceGroup {
 }
 
 interface RoadTableProps {
-  onProvinceClick?: () => void;
   onSegmentClick?: () => void;
 }
 
 // Red color for blocked roads
 const BLOCKED_COLOR = "#DC2626";
 
-export function RoadTable({ onProvinceClick, onSegmentClick }: RoadTableProps) {
+export function RoadTable(props: RoadTableProps = {}) {
+  const { onSegmentClick } = props;
   const segments = useRoadSegments();
   const {
     selectedProvince,
