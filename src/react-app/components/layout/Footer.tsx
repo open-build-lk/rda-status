@@ -2,10 +2,11 @@ import { Github } from "lucide-react";
 
 export function Footer() {
   return (
-    <footer className="border-t border-gray-200 bg-white px-4 py-4 dark:border-gray-800 dark:bg-gray-950">
-      <div className="flex items-center justify-between text-sm text-gray-500">
-        <div>
-          Data Source: Road Development Authority (RDA). Last Updated: 2025-11-30 7:30 PM
+    <footer className="border-t border-gray-200 bg-white px-3 py-2.5 dark:border-gray-800 dark:bg-gray-950 sm:px-4 sm:py-4">
+      <div className="flex flex-col items-start gap-2 text-xs text-gray-500 sm:flex-row sm:items-center sm:justify-between sm:text-sm">
+        <div className="line-clamp-1 sm:line-clamp-none">
+          <span className="hidden sm:inline">Data Source: Road Development Authority (RDA). </span>
+          <span>Last Updated: 2025-11-30 7:30 PM</span>
         </div>
         <a
           href="https://github.com/open-build-lk/rda-status"
