@@ -11,7 +11,7 @@ export function Footer() {
           href="https://github.com/open-build-lk/rda-status"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-1.5 hover:text-gray-900 dark:hover:text-gray-100"
+          className="hidden items-center gap-1.5 hover:text-gray-900 dark:hover:text-gray-100"
         >
           <Github className="h-4 w-4" />
           <span>GitHub</span>
