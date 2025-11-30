@@ -154,7 +154,10 @@ export function Home() {
         {/* Road table - mobile full-screen overlay */}
         {showMobileList && (
           <div className="flex-1 bg-white dark:bg-gray-900 lg:hidden">
-            <RoadTable />
+            <RoadTable
+              onProvinceClick={() => setShowMobileList(false)}
+              onSegmentClick={() => setShowMobileList(false)}
+            />
           </div>
         )}
       </div>

@@ -15,10 +15,15 @@ interface ProvinceGroup {
   bounds: LatLngBounds;
 }
 
+interface RoadTableProps {
+  onProvinceClick?: () => void;
+  onSegmentClick?: () => void;
+}
+
 // Red color for blocked roads
 const BLOCKED_COLOR = "#DC2626";
 
-export function RoadTable() {
+export function RoadTable({ onProvinceClick, onSegmentClick }: RoadTableProps = {}) {
   const segments = useRoadSegments();
   const {
     selectedProvince,
@@ -73,6 +78,7 @@ export function RoadTable() {
 
   const handleSegmentClick = (segment: RoadSegmentData) => {
     selectSegment(segment.id, segment.midpoint);
+    onSegmentClick?.();
   };
 
   return (
