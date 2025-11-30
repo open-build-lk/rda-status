@@ -1,6 +1,5 @@
 import {
   Home,
-  Map,
   FileText,
   FolderKanban,
   BarChart3,
@@ -36,12 +35,6 @@ const navItems: NavItem[] = [
     label: "Home",
     icon: <Home className="h-5 w-5" />,
     href: "/",
-    roles: null,
-  },
-  {
-    label: "Map",
-    icon: <Map className="h-5 w-5" />,
-    href: "/map",
     roles: null,
   },
   {

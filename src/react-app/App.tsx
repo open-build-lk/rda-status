@@ -1,9 +1,8 @@
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Layout } from "@/components/layout";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import {
   Home,
-  MapPage,
   Reports,
   Projects,
   Dashboard,
@@ -13,14 +12,11 @@ import {
 } from "@/pages";
 
 function AppContent() {
-  const location = useLocation();
-
   return (
-    <Layout currentPath={location.pathname}>
+    <Layout>
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<Home />} />
-        <Route path="/map" element={<MapPage />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/submit" element={<SubmitReport />} />
         <Route path="/login" element={<Login />} />

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Road -->
+  <path d="M4 24 L16 8 L28 24" fill="none" stroke="#374151" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Road center line -->
+  <path d="M10 18 L16 10 L22 18" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="3,2"/>
+  <!-- Warning triangle -->
+  <path d="M16 20 L12 26 L20 26 Z" fill="#dc2626" stroke="#991b1b" stroke-width="1"/>
+  <text x="16" y="25" text-anchor="middle" fill="white" font-size="6" font-weight="bold">!</text>
+</svg>
