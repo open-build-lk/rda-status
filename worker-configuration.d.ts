@@ -3,7 +3,11 @@
 // Runtime types generated with workerd@1.20250617.0 2025-10-08 nodejs_compat
 declare namespace Cloudflare {
 	interface Env {
-		JWT_SECRET: string;
+		BETTER_AUTH_SECRET: string;
+		BETTER_AUTH_URL: string;
+		PRODUCTION_URL: string;
+		ENVIRONMENT: string;
+		MAILGUN_API_KEY: string;
 		GOOGLE_MAPS_API_KEY: string;
 		MEDIA_BUCKET: R2Bucket;
 		DB: D1Database;
@@ -14,7 +18,7 @@ type StringifyValues<EnvType extends Record<string, unknown>> = {
 	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
 };
 declare namespace NodeJS {
-	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "JWT_SECRET" | "GOOGLE_MAPS_API_KEY">> {}
+	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "BETTER_AUTH_SECRET" | "BETTER_AUTH_URL" | "PRODUCTION_URL" | "ENVIRONMENT" | "MAILGUN_API_KEY" | "GOOGLE_MAPS_API_KEY">> {}
 }
 
 // Begin runtime types

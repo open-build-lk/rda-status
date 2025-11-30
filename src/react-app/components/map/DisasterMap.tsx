@@ -1,4 +1,4 @@
-import { useMemo, useEffect } from "react";
+import { useEffect } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -10,26 +10,11 @@ import {
 import { DivIcon, LatLngExpression } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { MapLegend } from "./MapLegend";
-import {
-  initialRoadSegments,
-  mapReasonToDamageType,
-  mapReasonToSeverity,
-} from "@/data/initialRoadSegments";
-import { snappedRoadPaths } from "@/data/snappedRoadPaths";
+import { useRoadSegments, ProcessedRoadSegment } from "@/hooks/useRoadSegments";
 import { useMapViewStore } from "@/stores/mapView";
 
-export interface RoadSegmentData {
-  id: string;
-  roadNo: string;
-  roadName: string | null;
-  province: string;
-  path: LatLngExpression[];
-  midpoint: LatLngExpression;
-  damageType: string;
-  severity: number;
-  description: string;
-  reason: string;
-}
+// Re-export for backwards compatibility
+export type RoadSegmentData = ProcessedRoadSegment;
 
 // All blocked roads are red
 const BLOCKED_ROAD_COLOR = "#DC2626";
@@ -101,53 +86,33 @@ function MapController() {
   return null;
 }
 
-// Hook to get processed segments - exported for use in RoadTable
-export function useRoadSegments(): RoadSegmentData[] {
-  return useMemo<RoadSegmentData[]>(() => {
-    return initialRoadSegments
-      .filter((seg) => {
-        // Filter out segments where start and end are the same (point damage)
-        return seg.fromLat !== seg.toLat || seg.fromLng !== seg.toLng;
-      })
-      .map((seg) => {
-        // Use pre-computed snapped path, or fall back to straight line
-        const rawPath = snappedRoadPaths[seg.id] || [
-          { lat: seg.fromLat, lng: seg.fromLng },
-          { lat: seg.toLat, lng: seg.toLng },
-        ];
-
-        // Convert to Leaflet format [lat, lng]
-        const path: LatLngExpression[] = rawPath.map((p) => [p.lat, p.lng]);
-
-        // Calculate midpoint from the actual path
-        const midIndex = Math.floor(rawPath.length / 2);
-        const midpointRaw = rawPath[midIndex] || {
-          lat: (seg.fromLat + seg.toLat) / 2,
-          lng: (seg.fromLng + seg.toLng) / 2,
-        };
-        const midpoint: LatLngExpression = [midpointRaw.lat, midpointRaw.lng];
-
-        return {
-          id: seg.id,
-          roadNo: seg.roadNo,
-          roadName: seg.roadName,
-          province: seg.province,
-          path,
-          midpoint,
-          damageType: mapReasonToDamageType(seg.reason),
-          severity: mapReasonToSeverity(seg.reason),
-          description: `${seg.roadNo} from km ${seg.fromKm} to km ${seg.toKm}`,
-          reason: seg.reason,
-        };
-      });
-  }, []);
-}
+// Re-export useRoadSegments from the hook module for backwards compatibility with RoadTable
+export { useRoadSegments } from "@/hooks/useRoadSegments";
 
 export function DisasterMap() {
   // Sri Lanka center coordinates
   const center: LatLngExpression = [7.8731, 80.7718];
-  const segments = useRoadSegments();
+  const { segments, isLoading, error } = useRoadSegments();
   const { selectedSegmentId } = useMapViewStore();
+
+  if (isLoading) {
+    return (
+      <div className="relative h-full w-full bg-gray-100 animate-pulse flex items-center justify-center">
+        <div className="text-gray-500">Loading map data...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="relative h-full w-full flex items-center justify-center bg-gray-50">
+        <div className="text-red-500 text-center">
+          <p className="font-medium">Failed to load map data</p>
+          <p className="text-sm">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative h-full w-full">

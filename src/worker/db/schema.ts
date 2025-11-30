@@ -1,27 +1,16 @@
 import { sqliteTable, text, integer, real, index } from "drizzle-orm/sqlite-core";
 import { relations } from "drizzle-orm";
 
-// ============ USERS ============
-export const users = sqliteTable(
-  "users",
-  {
-    id: text("id").primaryKey(),
-    email: text("email").notNull().unique(),
-    passwordHash: text("password_hash").notNull(),
-    name: text("name").notNull(),
-    phone: text("phone"),
-    role: text("role").notNull().default("citizen"),
-    provinceScope: text("province_scope"),
-    districtScope: text("district_scope"),
-    isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
-    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
-    lastLogin: integer("last_login", { mode: "timestamp" }),
-  },
-  (table) => [
-    index("users_email_idx").on(table.email),
-    index("users_role_idx").on(table.role),
-  ]
-);
+// Re-export auth schema tables
+export {
+  user,
+  session,
+  account,
+  verification,
+} from "./auth-schema";
+
+// Import user for relations
+import { user } from "./auth-schema";
 
 // ============ LOCATIONS ============
 export const locations = sqliteTable(
@@ -50,7 +39,7 @@ export const damageReports = sqliteTable(
   {
     id: text("id").primaryKey(),
     reportNumber: text("report_number").notNull().unique(),
-    submitterId: text("submitter_id").references(() => users.id),
+    submitterId: text("submitter_id").references(() => user.id),
     // Anonymous submissions may not have a submitter
     anonymousName: text("anonymous_name"),
     anonymousContact: text("anonymous_contact"),
@@ -128,7 +117,7 @@ export const stateTransitions = sqliteTable(
       .references(() => damageReports.id),
     fromStatus: text("from_status"),
     toStatus: text("to_status").notNull(),
-    userId: text("user_id").references(() => users.id),
+    userId: text("user_id").references(() => user.id),
     userRole: text("user_role"),
     reason: text("reason"),
     metadata: text("metadata"), // JSON stored as text
@@ -150,7 +139,7 @@ export const rebuildProjects = sqliteTable(
     name: text("name").notNull(),
     description: text("description"),
     ownerDepartment: text("owner_department"),
-    projectManagerId: text("project_manager_id").references(() => users.id),
+    projectManagerId: text("project_manager_id").references(() => user.id),
     // Location scope
     provinceId: text("province_id").references(() => locations.id),
     districtId: text("district_id").references(() => locations.id),
@@ -215,7 +204,7 @@ export const reportProjectLinks = sqliteTable(
       .notNull()
       .references(() => rebuildProjects.id),
     linkType: text("link_type").notNull().default("primary"), // primary, related, contributing
-    linkedBy: text("linked_by").references(() => users.id),
+    linkedBy: text("linked_by").references(() => user.id),
     notes: text("notes"),
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
   },
@@ -237,10 +226,18 @@ export const roadSegments = sqliteTable(
     endLng: real("end_lng").notNull(),
     snappedPath: text("snapped_path"), // JSON array of coordinates
     roadName: text("road_name"),
+    // New fields from hardcoded data
+    roadNo: text("road_no"),
+    fromKm: real("from_km"),
+    toKm: real("to_km"),
+    reason: text("reason"),
+    dataSource: text("data_source"),
+    province: text("province"),
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
   },
   (table) => [
     index("road_segments_report_idx").on(table.reportId),
+    index("road_segments_province_idx").on(table.province),
   ]
 );
 
@@ -249,7 +246,7 @@ export const priorityConfig = sqliteTable("priority_config", {
   id: text("id").primaryKey(),
   version: text("version").notNull().unique(),
   weights: text("weights").notNull(), // JSON stored as text
-  createdBy: text("created_by").references(() => users.id),
+  createdBy: text("created_by").references(() => user.id),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(false),
 });
@@ -261,7 +258,7 @@ export const comments = sqliteTable(
     id: text("id").primaryKey(),
     reportId: text("report_id").references(() => damageReports.id),
     projectId: text("project_id").references(() => rebuildProjects.id),
-    userId: text("user_id").references(() => users.id),
+    userId: text("user_id").references(() => user.id),
     content: text("content").notNull(),
     isInternal: integer("is_internal", { mode: "boolean" })
       .notNull()
@@ -275,7 +272,7 @@ export const comments = sqliteTable(
 );
 
 // ============ RELATIONS ============
-export const usersRelations = relations(users, ({ many }) => ({
+export const userRelations = relations(user, ({ many }) => ({
   damageReports: many(damageReports),
   stateTransitions: many(stateTransitions),
   comments: many(comments),
@@ -295,9 +292,9 @@ export const locationsRelations = relations(locations, ({ one, many }) => ({
 export const damageReportsRelations = relations(
   damageReports,
   ({ one, many }) => ({
-    submitter: one(users, {
+    submitter: one(user, {
       fields: [damageReports.submitterId],
-      references: [users.id],
+      references: [user.id],
     }),
     province: one(locations, {
       fields: [damageReports.provinceId],
@@ -329,9 +326,9 @@ export const roadSegmentsRelations = relations(roadSegments, ({ one }) => ({
 export const rebuildProjectsRelations = relations(
   rebuildProjects,
   ({ one, many }) => ({
-    projectManager: one(users, {
+    projectManager: one(user, {
       fields: [rebuildProjects.projectManagerId],
-      references: [users.id],
+      references: [user.id],
     }),
     province: one(locations, {
       fields: [rebuildProjects.provinceId],
@@ -380,9 +377,9 @@ export const stateTransitionsRelations = relations(
       fields: [stateTransitions.reportId],
       references: [damageReports.id],
     }),
-    user: one(users, {
+    transitionUser: one(user, {
       fields: [stateTransitions.userId],
-      references: [users.id],
+      references: [user.id],
     }),
   })
 );
@@ -398,9 +395,9 @@ export const reportProjectLinksRelations = relations(
       fields: [reportProjectLinks.projectId],
       references: [rebuildProjects.id],
     }),
-    linkedByUser: one(users, {
+    linkedByUser: one(user, {
       fields: [reportProjectLinks.linkedBy],
-      references: [users.id],
+      references: [user.id],
     }),
   })
 );
@@ -414,8 +411,8 @@ export const commentsRelations = relations(comments, ({ one }) => ({
     fields: [comments.projectId],
     references: [rebuildProjects.id],
   }),
-  user: one(users, {
+  commentUser: one(user, {
     fields: [comments.userId],
-    references: [users.id],
+    references: [user.id],
   }),
 }));

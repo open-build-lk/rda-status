@@ -1,5 +1,14 @@
 # Worker environment variables (Cloudflare)
 # Copy this file to .dev.vars and fill in your values
 
-JWT_SECRET=your-jwt-secret-here
+# Better-Auth configuration
+BETTER_AUTH_SECRET=your-secret-key-at-least-32-characters-long
+BETTER_AUTH_URL=http://localhost:5173
+PRODUCTION_URL=https://road-lk.org
+ENVIRONMENT=development
+
+# Email (Mailgun)
+MAILGUN_API_KEY=your-mailgun-api-key
+
+# Google Maps
 GOOGLE_MAPS_API_KEY=your-google-maps-api-key-here

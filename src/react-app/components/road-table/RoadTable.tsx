@@ -1,17 +1,14 @@
 import { useMemo } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { LatLngBounds } from "leaflet";
-import {
-  useRoadSegments,
-  RoadSegmentData,
-  DAMAGE_ICONS,
-} from "@/components/map/DisasterMap";
+import { useRoadSegments, ProcessedRoadSegment } from "@/hooks/useRoadSegments";
+import { DAMAGE_ICONS } from "@/components/map/DisasterMap";
 import { useMapViewStore } from "@/stores/mapView";
 import { cn } from "@/lib/utils";
 
 interface ProvinceGroup {
   province: string;
-  segments: RoadSegmentData[];
+  segments: ProcessedRoadSegment[];
   bounds: LatLngBounds;
 }
 
@@ -24,7 +21,7 @@ const BLOCKED_COLOR = "#DC2626";
 
 export function RoadTable(props: RoadTableProps = {}) {
   const { onSegmentClick } = props;
-  const segments = useRoadSegments();
+  const { segments, isLoading, error } = useRoadSegments();
   const {
     selectedProvince,
     selectedSegmentId,
@@ -35,7 +32,7 @@ export function RoadTable(props: RoadTableProps = {}) {
 
   // Group segments by province and calculate bounds
   const provinceGroups = useMemo<ProvinceGroup[]>(() => {
-    const groups: Record<string, RoadSegmentData[]> = {};
+    const groups: Record<string, ProcessedRoadSegment[]> = {};
 
     segments.forEach((seg) => {
       if (!groups[seg.province]) {
@@ -76,10 +73,41 @@ export function RoadTable(props: RoadTableProps = {}) {
     selectProvince(group.province, group.bounds);
   };
 
-  const handleSegmentClick = (segment: RoadSegmentData) => {
+  const handleSegmentClick = (segment: ProcessedRoadSegment) => {
     selectSegment(segment.id, segment.midpoint);
     onSegmentClick?.();
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex h-full flex-col overflow-hidden bg-white dark:bg-gray-900">
+        <div className="border-b border-gray-200 px-4 py-3 dark:border-gray-700">
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
+            Affected Roads
+          </h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Loading...</p>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-gray-400 animate-pulse">Loading road data...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-full flex-col overflow-hidden bg-white dark:bg-gray-900">
+        <div className="border-b border-gray-200 px-4 py-3 dark:border-gray-700">
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
+            Affected Roads
+          </h2>
+        </div>
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="text-red-500 text-center text-sm">{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-white dark:bg-gray-900">

@@ -7,8 +7,17 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
-  const { user } = useAuthStore();
+  const { user, isInitialized } = useAuthStore();
   const location = useLocation();
+
+  // Wait for auth to initialize before making decisions
+  if (!isInitialized) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="text-gray-500">Loading...</div>
+      </div>
+    );
+  }
 
   if (!user) {
     // Not logged in, redirect to login with return URL

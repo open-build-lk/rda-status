@@ -93,6 +93,11 @@ mapRoutes.get("/segments", async (c) => {
       reportId: roadSegments.reportId,
       snappedPath: roadSegments.snappedPath,
       roadName: roadSegments.roadName,
+      roadNo: roadSegments.roadNo,
+      province: roadSegments.province,
+      reason: roadSegments.reason,
+      fromKm: roadSegments.fromKm,
+      toKm: roadSegments.toKm,
       damageType: damageReports.damageType,
       severity: damageReports.severity,
       description: damageReports.description,
@@ -100,7 +105,7 @@ mapRoutes.get("/segments", async (c) => {
       reportedAt: damageReports.createdAt,
     })
     .from(roadSegments)
-    .innerJoin(damageReports, eq(roadSegments.reportId, damageReports.id));
+    .leftJoin(damageReports, eq(roadSegments.reportId, damageReports.id));
 
   // Format for frontend
   const formatted = results.map((s) => {
@@ -109,10 +114,13 @@ mapRoutes.get("/segments", async (c) => {
       id: s.id,
       reportId: s.reportId,
       roadName: s.roadName,
-      segment: {
-        path,
-        midpoint: calculateMidpoint(path),
-      },
+      roadNo: s.roadNo,
+      province: s.province,
+      reason: s.reason,
+      fromKm: s.fromKm,
+      toKm: s.toKm,
+      path,
+      midpoint: calculateMidpoint(path),
       damageType: s.damageType,
       severity: s.severity,
       description: s.description,
