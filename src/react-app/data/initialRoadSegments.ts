@@ -1,0 +1,133 @@
+// Initial road segment data from RDA CSV
+// This data is displayed on the map before any user-submitted reports
+
+export interface InitialRoadSegment {
+  id: string;
+  province: string;
+  roadNo: string;
+  roadName: string;
+  reason: string;
+  fromKm: number;
+  fromLat: number;
+  fromLng: number;
+  toKm: number;
+  toLat: number;
+  toLng: number;
+  dataSource: string;
+}
+
+// Map reason to damage type
+export function mapReasonToDamageType(reason: string): string {
+  const r = reason.toLowerCase();
+  if (r.includes("inundated") || r.includes("flood")) return "flooding";
+  if (r.includes("landslide")) return "landslide";
+  if (r.includes("collapse")) return "collapse";
+  if (r.includes("washout") || r.includes("washed")) return "washout";
+  if (r.includes("tree")) return "blockage";
+  if (r.includes("rock")) return "landslide";
+  if (r.includes("crack")) return "crack";
+  return "other";
+}
+
+// Map reason to severity (1-4)
+export function mapReasonToSeverity(reason: string): number {
+  const r = reason.toLowerCase();
+  if (r.includes("massive")) return 4;
+  if (r.includes("landslide") || r.includes("collapse")) return 3;
+  if (r.includes("inundated") || r.includes("flood")) return 2;
+  if (r.includes("tree")) return 1;
+  return 2;
+}
+
+export const initialRoadSegments: InitialRoadSegment[] = [
+  { id: "rs-001", province: "Eastern", roadNo: "B-187", roadName: "Kalmunai - Chavalakadai Road", reason: "Inundated", fromKm: 3.5, fromLat: 7.41628132763044, fromLng: 81.81125112818002, toKm: 3.69, toLat: 7.4159069207123, toLng: 81.81293072743274, dataSource: "OpenStreetMap" },
+  { id: "rs-002", province: "Eastern", roadNo: "A-004", roadName: "Colombo - Ratnapura - Wellawaya - Batticaloa", reason: "Inundated", fromKm: 422, fromLat: 6.8892399, fromLng: 81.6933511, toKm: 424, toLat: 6.8892399, toLng: 81.6933511, dataSource: "OpenStreetMap" },
+  { id: "rs-003", province: "Eastern", roadNo: "A-015", roadName: "Batticaloa - Thirukkondiyadimadu - Trincomalee", reason: "Inundated", fromKm: 5, fromLat: 7.873429905967795, fromLng: 81.54033281799308, toKm: 8, toLat: 7.899913206544723, toLng: 81.53572444674928, dataSource: "OSRM routing" },
+  { id: "rs-004", province: "Eastern", roadNo: "A-015", roadName: "Batticaloa - Thirukkondiyadimadu - Trincomalee", reason: "Inundated", fromKm: 19, fromLat: 7.971667227408371, fromLng: 81.51687336896723, toKm: 21, toLat: 7.9864259530667825, toLng: 81.50725152879653, dataSource: "OSRM routing" },
+  { id: "rs-005", province: "Eastern", roadNo: "B-344", roadName: "Pattirippu - Vellavali Road", reason: "Inundated", fromKm: 1.25, fromLat: 7.517138685935679, fromLng: 81.78463137692036, toKm: 1.85, toLat: 7.516493086926698, toLng: 81.77923373760815, dataSource: "OpenStreetMap" },
+  { id: "rs-006", province: "Eastern", roadNo: "B-433", roadName: "Umarana Road", reason: "Inundated", fromKm: 0, fromLat: 7.7078204, fromLng: 81.6727444, toKm: 3.3, toLat: 7.723098839157038, toLng: 81.67642831072646, dataSource: "OpenStreetMap" },
+  { id: "rs-007", province: "Eastern", roadNo: "B-541", roadName: "Thambalagamuwa - Kinniya Road", reason: "Inundated", fromKm: 5, fromLat: 8.47879231224236, fromLng: 81.12393980479804, toKm: 6, toLat: 8.472756522904696, toLng: 81.1297371603254, dataSource: "OSRM routing" },
+  { id: "rs-008", province: "Eastern", roadNo: "B-333", roadName: "Oddumavadi - Valachchenai Road", reason: "Inundated", fromKm: 1.8, fromLat: 7.914507578871575, fromLng: 81.45802666157508, toKm: 5, toLat: 7.912678428948477, toLng: 81.48676773956126, dataSource: "OpenStreetMap" },
+  { id: "rs-009", province: "Central", roadNo: "A-026", roadName: "Kandy - Mahiyanganaya - Padiyathalawa Road", reason: "Landslide", fromKm: 29, fromLat: 7.278564115206363, fromLng: 80.7889528243124, toKm: 54, toLat: 7.329505349893146, toLng: 80.9069908285237, dataSource: "OSRM routing" },
+  { id: "rs-010", province: "Central", roadNo: "A-005", roadName: "Peradeniya - Badulla - Chenkaladi Road", reason: "Landslide", fromKm: 14, fromLat: 7.279170231080494, fromLng: 80.67891057390771, toKm: 76, toLat: 7.352299724947288, toLng: 80.95900641985256, dataSource: "OSRM routing" },
+  { id: "rs-011", province: "Central", roadNo: "B-413", roadName: "Tennekumbura - Rikillagaskada - Ragala Road", reason: "Landslide", fromKm: 25, fromLat: 7.192256537912204, fromLng: 80.73856362297718, toKm: 59, toLat: 7.146453007498326, toLng: 80.80450924633442, dataSource: "OpenStreetMap" },
+  { id: "rs-012", province: "Central", roadNo: "B-621", roadName: "Atabage - Dunukeulla Road", reason: "Landslide", fromKm: 4, fromLat: 7.142252105800924, fromLng: 80.61692444628872, toKm: 8, toLat: 7.1343961, toLng: 80.5978194, dataSource: "OpenStreetMap" },
+  { id: "rs-013", province: "Central", roadNo: "B-364", roadName: "Peradeniya - Deltota - Rikillagaskada Road", reason: "Landslide", fromKm: 5, fromLat: 7.236643635663033, fromLng: 80.60704578760844, toKm: 15, toLat: 7.225099919900054, toLng: 80.63987887370787, dataSource: "OpenStreetMap" },
+  { id: "rs-014", province: "Central", roadNo: "B-332", roadName: "Nuwara Eliya - Ragala - Udapussellawa Road", reason: "Landslide", fromKm: 6, fromLat: 6.976929921658288, fromLng: 80.81381831807168, toKm: 13, toLat: 6.989655305675992, toLng: 80.8758735438422, dataSource: "OpenStreetMap" },
+  { id: "rs-015", province: "Central", roadNo: "B-274", roadName: "Matale - Ilukkumbura - Laggala Road", reason: "Landslide", fromKm: 10, fromLat: 7.510771114460947, fromLng: 80.67207499528259, toKm: 42, toLat: 7.497886290019541, toLng: 80.69831760851278, dataSource: "OpenStreetMap" },
+  { id: "rs-016", province: "Central", roadNo: "A-026", roadName: "Kandy - Mahiyanganaya - Padiyathalawa Road", reason: "Landslide", fromKm: 39, fromLat: 7.291539786698492, fromLng: 80.83527280503631, toKm: 41, toLat: 7.29679389706461, toLng: 80.851223831636, dataSource: "OSRM routing" },
+  { id: "rs-017", province: "Central", roadNo: "B-490", roadName: "Atabage - Ulapane Road", reason: "Landslide", fromKm: 5, fromLat: 7.156964773551969, fromLng: 80.57730106793441, toKm: 8, toLat: 7.151435410024233, toLng: 80.56574593514436, dataSource: "OSRM routing" },
+  { id: "rs-018", province: "Central", roadNo: "B-369", roadName: "Pitiyegedara - Wattegama - Iriyagastenna Road", reason: "Landslide", fromKm: 5, fromLat: 7.353974971955193, fromLng: 80.68149314131448, toKm: 5.3, toLat: 7.3540379, toLng: 80.6821763, dataSource: "OpenStreetMap" },
+  { id: "rs-019", province: "Central", roadNo: "A-005", roadName: "Peradeniya - Badulla - Chenkaladi Road", reason: "Landslide", fromKm: 44, fromLat: 7.291581802961169, fromLng: 80.82843460039034, toKm: 67, toLat: 7.355995116321339, toLng: 80.91718595500295, dataSource: "OSRM routing" },
+  { id: "rs-020", province: "Central", roadNo: "B-364", roadName: "Peradeniya - Deltota - Rikillagaskada Road", reason: "Landslide", fromKm: 22.5, fromLat: 7.178700926695645, fromLng: 80.68940540218584, toKm: 52, toLat: 7.176211791942404, toLng: 80.69151233793679, dataSource: "OpenStreetMap" },
+  { id: "rs-021", province: "Central", roadNo: "B-492", roadName: "Kandehhandiya - Adhikarigama - Randenigala - Loggal Oya", reason: "Landslide", fromKm: 11, fromLat: 7.18566431552249, fromLng: 80.91963907718204, toKm: 15, toLat: 7.176691113958394, toLng: 80.88455608049085, dataSource: "OpenStreetMap" },
+  { id: "rs-022", province: "Central", roadNo: "B-346", roadName: "Palapathwala - Galewela Road", reason: "Landslide", fromKm: 27, fromLat: 7.728808285816185, fromLng: 80.57549464933457, toKm: 28, toLat: 7.735118371331146, toLng: 80.57534339230799, dataSource: "OpenStreetMap" },
+  { id: "rs-023", province: "Central", roadNo: "B-346", roadName: "Palapathwala - Galewela Road", reason: "Inundated", fromKm: 12.7, fromLat: 7.631537942092117, fromLng: 80.60512442024383, toKm: 12.8, toLat: 7.632416731375096, toLng: 80.60491260824467, dataSource: "OpenStreetMap" },
+  { id: "rs-024", province: "Central", roadNo: "B-461", roadName: "Wattegama - Kandenuwara - Wariyapola Road", reason: "Landslide", fromKm: 7.5, fromLat: 7.368177668009215, fromLng: 80.68297885384914, toKm: 10, toLat: 7.363797289180836, toLng: 80.67969298835436, dataSource: "OpenStreetMap" },
+  { id: "rs-025", province: "Central", roadNo: "AB-013", roadName: "Gampola - Nawalapitiya Road", reason: "Landslide", fromKm: 10, fromLat: 7.08595782452779, fromLng: 80.55367531132298, toKm: 10, toLat: 7.08595782452779, toLng: 80.55367531132298, dataSource: "OpenStreetMap" },
+  { id: "rs-026", province: "Central", roadNo: "B-154", roadName: "Hindagala - Naranwita Road", reason: "Inundated", fromKm: 0, fromLat: 7.1618174, fromLng: 80.5735359, toKm: 0, toLat: 7.1618174, toLng: 80.5735359, dataSource: "OpenStreetMap" },
+  { id: "rs-027", province: "Central", roadNo: "B-392", roadName: "Rattota - Gammaduwa Road", reason: "Landslide", fromKm: 4, fromLat: 7.543838668630795, fromLng: 80.67384439044814, toKm: 7, toLat: 7.562541047003287, toLng: 80.6817780074314, dataSource: "OSRM routing" },
+  { id: "rs-028", province: "Central", roadNo: "B-462", roadName: "Wattegama - Matale Road", reason: "Massive Landslide", fromKm: 5, fromLat: 7.388249840183101, fromLng: 80.66327411694532, toKm: 5, toLat: 7.388249840183101, toLng: 80.66327411694532, dataSource: "OpenStreetMap" },
+  { id: "rs-029", province: "Central", roadNo: "B-279", roadName: "Mawanella - Hemmathagama Road", reason: "Landslide", fromKm: 21, fromLat: 7.2153004634716025, fromLng: 80.47901703468881, toKm: 21, toLat: 7.2153004634716025, toLng: 80.47901703468881, dataSource: "OpenStreetMap" },
+  { id: "rs-030", province: "Central", roadNo: "B-007", roadName: "Alawatugoda - Ankumbura Road", reason: "Landslide", fromKm: 5, fromLat: 7.423089773840242, fromLng: 80.58747753707935, toKm: 5, toLat: 7.423089773840242, toLng: 80.58747753707935, dataSource: "OpenStreetMap" },
+  { id: "rs-031", province: "Central", roadNo: "AA-007", roadName: "Avissawella - Hatton - Nuwara Eliya Road", reason: "Landslide", fromKm: 63, fromLat: 7.017413069326442, fromLng: 80.29692730430645, toKm: 72, toLat: 7.004493230643986, toLng: 80.37734303486143, dataSource: "OpenStreetMap" },
+  { id: "rs-032", province: "Central", roadNo: "B-148", roadName: "Harangala - Kalapitiya - Kumbuloluwa Road", reason: "Landslide", fromKm: 4, fromLat: 7.0474428853289615, fromLng: 80.64869406919662, toKm: 8, toLat: 7.04109331417523, toLng: 80.63243240190484, dataSource: "OpenStreetMap" },
+  { id: "rs-033", province: "Central", roadNo: "AA-006", roadName: "Ambepussa - Kurunegala - Trincomalee Road", reason: "Landslide", fromKm: 77.8, fromLat: 7.820617123692765, fromLng: 80.60647566413775, toKm: 77.8, toLat: 7.820617123692765, toLng: 80.60647566413775, dataSource: "OpenStreetMap" },
+  { id: "rs-034", province: "Uva", roadNo: "A-004", roadName: "Colombo - Ratnapura - Wellawaya - Batticaloa", reason: "Landslide", fromKm: 202, fromLat: 6.8892399, fromLng: 81.6933511, toKm: 203, toLat: 6.8892399, toLng: 81.6933511, dataSource: "OpenStreetMap" },
+  { id: "rs-035", province: "Uva", roadNo: "B-507", roadName: "Rendapola - Ambewela Road", reason: "Landslide", fromKm: 1, fromLat: 6.8939178839285065, fromLng: 80.823047250542, toKm: 2, toLat: 6.887633673566932, toLng: 80.81869295891, dataSource: "OpenStreetMap" },
+  { id: "rs-036", province: "Uva", roadNo: "AA-005", roadName: "Peradeniya - Badulla - Chenkaladi Road", reason: "Landslide", fromKm: 93, fromLat: 7.131312137299365, fromLng: 80.61332760038738, toKm: 102, toLat: 7.077726968047257, toLng: 80.67464465314201, dataSource: "OpenStreetMap" },
+  { id: "rs-037", province: "Uva", roadNo: "AA-005", roadName: "Peradeniya - Badulla - Chenkaladi Road", reason: "Landslide", fromKm: 132, fromLat: 7.255544143713813, fromLng: 80.58970977523822, toKm: 160, toLat: 7.3571673323746944, toLng: 80.80374534260778, dataSource: "OpenStreetMap" },
+  { id: "rs-038", province: "Uva", roadNo: "B-043", roadName: "Bandarawela - Uva Highland - Ettampitiya Road", reason: "Landslide", fromKm: 0, fromLat: 6.833334, fromLng: 80.9847026, toKm: 16.5, toLat: 6.9370897, toLng: 80.9909664, dataSource: "OpenStreetMap" },
+  { id: "rs-039", province: "Uva", roadNo: "B-332", roadName: "Nuwara Eliya - Udapussellawa Road", reason: "Landslide", fromKm: 44, fromLat: 7.00151024293308, fromLng: 80.82352560436436, toKm: 45, toLat: 7.006221017205083, toLng: 80.83125050940731, dataSource: "OpenStreetMap" },
+  { id: "rs-040", province: "Uva", roadNo: "B-099", roadName: "Demodara - Spring Valley - Badulla Road", reason: "Landslide", fromKm: 8, fromLat: 6.35588582559294, fromLng: 80.56612434708724, toKm: 22, toLat: 6.3665246, toLng: 80.5918434, dataSource: "OpenStreetMap" },
+  { id: "rs-041", province: "Uva", roadNo: "B-508", roadName: "Welimada - Boralanda - Ohiya - Horton Plains", reason: "Landslide", fromKm: 22, fromLat: 6.804141693654032, fromLng: 80.83190650762558, toKm: 23, toLat: 6.802866451212185, toLng: 80.82295049205662, dataSource: "OpenStreetMap" },
+  { id: "rs-042", province: "Uva", roadNo: "B-100", roadName: "Dickwella - Jangulla - Nalapitigala Road", reason: "Landslide", fromKm: 0, fromLat: 6.9608918, fromLng: 81.0231258, toKm: 20, toLat: 7.064339971274235, toLng: 80.97685078466816, dataSource: "OpenStreetMap" },
+  { id: "rs-043", province: "Uva", roadNo: "B-360", roadName: "Passara - Madolsima - Mavigahathenna Road", reason: "Landslide", fromKm: 0, fromLat: 6.9916205, fromLng: 81.1716138, toKm: 30, toLat: 6.976320233912601, toLng: 81.15944314359865, dataSource: "OpenStreetMap" },
+  { id: "rs-044", province: "Uva", roadNo: "B-057", roadName: "Bibile - Uraniya - Mahiyanganaya Road", reason: "Inundated", fromKm: 35.6, fromLat: 7.174266642115066, fromLng: 81.18307063168187, toKm: 39, toLat: 7.178880265845074, toLng: 81.15541152448505, dataSource: "OpenStreetMap" },
+  { id: "rs-045", province: "Uva", roadNo: "B-036", roadName: "Badulla - Karametiya - Adalappotha Road", reason: "Landslide", fromKm: 12, fromLat: 7.2109841012328255, fromLng: 81.01361299034654, toKm: 17, toLat: 7.168341248155033, toLng: 81.02664007190792, dataSource: "OpenStreetMap" },
+  { id: "rs-046", province: "Uva", roadNo: "B-113", roadName: "Ella - Passara Road", reason: "Landslide", fromKm: 20, fromLat: 6.887433680732318, fromLng: 81.08164283176697, toKm: 26, toLat: 6.902547255684841, toLng: 81.1208432165033, dataSource: "OpenStreetMap" },
+  { id: "rs-047", province: "Uva", roadNo: "A-023", roadName: "Wellawaya - Ella - Kumbalwela Road", reason: "Rock Falls", fromKm: 15, fromLat: 6.819830776716229, fromLng: 81.08318724725525, toKm: 24, toLat: 6.859639271780873, toLng: 81.05587007673783, dataSource: "OSRM routing" },
+  { id: "rs-048", province: "North Central", roadNo: "A-11", roadName: "Maradankadawala - Habarana - Thirukkondiyadimadu", reason: "Inundated", fromKm: 74, fromLat: 7.961041125436379, fromLng: 81.10389369111707, toKm: 82, toLat: 7.961758001187418, toLng: 81.17645019170811, dataSource: "OpenStreetMap" },
+  { id: "rs-049", province: "North Central", roadNo: "B-488", roadName: "Polonnaruwa - Nabola - Sungawila - Somawathi", reason: "Inundated", fromKm: 14, fromLat: 8.1089123, fromLng: 81.159482, toKm: 37.7, toLat: 8.1089123, toLng: 81.159482, dataSource: "OpenStreetMap" },
+  { id: "rs-050", province: "North Central", roadNo: "B-423", roadName: "Thonigala - Kalawewa - Galewela Road", reason: "Inundated", fromKm: 0, fromLat: 8.0333644, fromLng: 80.5326218, toKm: 0, toLat: 8.0333644, toLng: 80.5326218, dataSource: "OpenStreetMap" },
+  { id: "rs-051", province: "North Central", roadNo: "AA-012", roadName: "Puttalam - Trincomalee Road", reason: "Inundated", fromKm: 75.5, fromLat: 8.638067968147885, fromLng: 81.00955910117767, toKm: 77, toLat: 8.631857864610357, toLng: 80.99744834887231, dataSource: "OpenStreetMap" },
+  { id: "rs-052", province: "North Central", roadNo: "AA-012", roadName: "Puttalam - Trincomalee Road", reason: "Inundated", fromKm: 0, fromLat: 8.3424054, fromLng: 80.4118033, toKm: 0, toLat: 8.3424054, toLng: 80.4118033, dataSource: "OpenStreetMap" },
+  { id: "rs-053", province: "North Central", roadNo: "B-182", roadName: "Kalawewa - Aukana Road", reason: "Inundated", fromKm: 3, fromLat: 8.005057567291832, fromLng: 80.52887115467622, toKm: 4, toLat: 7.998756364359562, toLng: 80.53480241985179, dataSource: "OpenStreetMap" },
+  { id: "rs-054", province: "North Central", roadNo: "A-009", roadName: "Kandy - Jaffna Road", reason: "Inundated", fromKm: 117, fromLat: 8.237707000982473, fromLng: 80.52284725622619, toKm: 118, toLat: 8.24648925402135, toLng: 80.52087175396001, dataSource: "OSRM routing" },
+  { id: "rs-055", province: "North Central", roadNo: "B-556", roadName: "Madatugama - Pubbogama - Andiyagala Road", reason: "Inundated", fromKm: 0, fromLat: 7.9442992, fromLng: 80.629244, toKm: 0, toLat: 7.9442992, toLng: 80.629244, dataSource: "OpenStreetMap" },
+  { id: "rs-056", province: "Sabaragamuwa", roadNo: "A-001", roadName: "Colombo - Kandy Road", reason: "Landslide", fromKm: 96, fromLat: 7.25271811147725, fromLng: 80.50538745060115, toKm: 99, toLat: 7.259748779469862, toLng: 80.52763304063262, dataSource: "OSRM routing" },
+  { id: "rs-057", province: "Sabaragamuwa", roadNo: "A-001", roadName: "Colombo - Kandy Road", reason: "Landslide", fromKm: 80, fromLat: 7.253661593293468, fromLng: 80.38153215711957, toKm: 80, toLat: 7.253661593293468, toLng: 80.38153215711957, dataSource: "OSRM routing" },
+  { id: "rs-058", province: "Sabaragamuwa", roadNo: "A-001", roadName: "Colombo - Kandy Road", reason: "Landslide", fromKm: 0, fromLat: 6.938956, fromLng: 79.854198, toKm: 0, toLat: 6.938956, toLng: 79.854198, dataSource: "OSRM routing" },
+  { id: "rs-059", province: "Sabaragamuwa", roadNo: "A-001", roadName: "Colombo - Kandy Road", reason: "Landslide", fromKm: 81, fromLat: 7.255448724964198, fromLng: 80.39038126967063, toKm: 81, toLat: 7.255448724964198, toLng: 80.39038126967063, dataSource: "OSRM routing" },
+  { id: "rs-060", province: "Sabaragamuwa", roadNo: "AA-004", roadName: "Colombo - Galle - Wellawaya - Batticaloa", reason: "Inundated", fromKm: 64, fromLat: 6.823427987863536, fromLng: 80.30901930013097, toKm: 64, toLat: 6.823427987863536, toLng: 80.30901930013097, dataSource: "OpenStreetMap" },
+  { id: "rs-061", province: "Sabaragamuwa", roadNo: "B-279", roadName: "Mawanella - Hemmathagama - Gampola Road", reason: "Landslide", fromKm: 17, fromLat: 7.195278635648074, fromLng: 80.4981221892005, toKm: 21, toLat: 7.2153004634716025, toLng: 80.47901703468881, dataSource: "OpenStreetMap" },
+  { id: "rs-062", province: "Sabaragamuwa", roadNo: "B-603", roadName: "Magammana - Kurupetta - Daigala - Gurugalla", reason: "Inundated", fromKm: 5.85, fromLat: 7.028427670334475, fromLng: 80.24030561470896, toKm: 5.87, toLat: 7.028247893250603, toLng: 80.24028595649843, dataSource: "OpenStreetMap" },
+  { id: "rs-063", province: "Sabaragamuwa", roadNo: "B-603", roadName: "Magammana - Kurupetta - Daigala - Gurugalla", reason: "Inundated", fromKm: 7.4, fromLat: 7.016684195114039, fromLng: 80.23535898103306, toKm: 7.8, toLat: 7.013530802048041, toLng: 80.23358588431499, dataSource: "OpenStreetMap" },
+  { id: "rs-064", province: "Sabaragamuwa", roadNo: "B-603", roadName: "Magammana - Kurupetta - Daigala - Gurugalla", reason: "Inundated", fromKm: 10.25, fromLat: 6.9949649711987965, fromLng: 80.22228636364537, toKm: 10.4, toLat: 6.9943504116526025, toLng: 80.22123523282227, dataSource: "OpenStreetMap" },
+  { id: "rs-065", province: "Sabaragamuwa", roadNo: "B-603", roadName: "Magammana - Kurupetta - Daigala - Gurugalla", reason: "Inundated", fromKm: 11.075, fromLat: 6.990467777239858, fromLng: 80.21752338349556, toKm: 11.1, toLat: 6.990604919457137, toLng: 80.21770324289136, dataSource: "OpenStreetMap" },
+  { id: "rs-066", province: "Sabaragamuwa", roadNo: "A-007", roadName: "Avissawella - Hatton - Nuwara Eliya Road", reason: "Landslide/Inundated", fromKm: 2, fromLat: 6.95862103362242, fromLng: 80.2251550147309, toKm: 35, toLat: 7.000060477432819, toLng: 80.38707359514596, dataSource: "OSRM routing" },
+  { id: "rs-067", province: "Sabaragamuwa", roadNo: "B-408", roadName: "Talduwa - Meewitigammana Road", reason: "Inundated", fromKm: 0, fromLat: 6.9585517, fromLng: 80.2218847, toKm: 2, toLat: 6.975673830409731, toLng: 80.21826391952241, dataSource: "OpenStreetMap" },
+  { id: "rs-068", province: "Sabaragamuwa", roadNo: "A-021", roadName: "Kegalle - Bulathkohupitiya - Karawanella", reason: "Landslide", fromKm: 7, fromLat: 7.093886444060652, fromLng: 80.27971505207995, toKm: 10, toLat: 7.071432147330406, toLng: 80.26801856922023, dataSource: "OSRM routing" },
+  { id: "rs-069", province: "Sabaragamuwa", roadNo: "A-021", roadName: "Kegalle - Bulathkohupitiya - Karawanella", reason: "Inundated", fromKm: 35, fromLat: 7.023657, fromLng: 80.261349, toKm: 39, toLat: 7.023657, toLng: 80.261349, dataSource: "OSRM routing" },
+  { id: "rs-070", province: "Sabaragamuwa", roadNo: "B-358", roadName: "Parusella - Panapitiya Road", reason: "Inundated", fromKm: 0, fromLat: 7.0418804, fromLng: 80.3130372, toKm: 5, toLat: 7.081586789962977, toLng: 80.30239581003603, dataSource: "OpenStreetMap" },
+  { id: "rs-071", province: "Sabaragamuwa", roadNo: "B-136", roadName: "Galilipitiya - Hettimulla Road", reason: "Landslide", fromKm: 5, fromLat: 7.175312922820972, fromLng: 80.3820101618252, toKm: 5, toLat: 7.175312922820972, toLng: 80.3820101618252, dataSource: "OpenStreetMap" },
+  { id: "rs-072", province: "Sabaragamuwa", roadNo: "B-127", roadName: "Galigamuwa - Ruwanwella Road", reason: "Inundated", fromKm: 0, fromLat: 7.0732629, fromLng: 80.2695329, toKm: 0, toLat: 7.0732629, toLng: 80.2695329, dataSource: "OpenStreetMap" },
+  { id: "rs-073", province: "Sabaragamuwa", roadNo: "B-601", roadName: "Kegalle - Siyambalapitiya - Dewalegama Road", reason: "Landslide/Inundated", fromKm: 2, fromLat: 7.2681796516393815, fromLng: 80.33456166744111, toKm: 2, toLat: 7.2681796516393815, toLng: 80.33456166744111, dataSource: "OpenStreetMap" },
+  { id: "rs-074", province: "Sabaragamuwa", roadNo: "A-019", roadName: "Polgahawela - Kegalle Road", reason: "Landslide", fromKm: 9, fromLat: 7.270804453057576, fromLng: 80.32795729149962, toKm: 9, toLat: 7.270804453057576, toLng: 80.32795729149962, dataSource: "OSRM routing" },
+  { id: "rs-075", province: "Sabaragamuwa", roadNo: "B-600", roadName: "Meepitiya - Ikiriyagala - Paragammana Road", reason: "Landslide/Inundated", fromKm: 3, fromLat: 7.242630708123858, fromLng: 80.36594846967662, toKm: 3, toLat: 7.242630708123858, toLng: 80.36594846967662, dataSource: "OpenStreetMap" },
+  { id: "rs-076", province: "Sabaragamuwa", roadNo: "A-008", roadName: "Panadura - Nambapana - Ratnapura Road", reason: "Inundated", fromKm: 66, fromLat: 6.692524771289623, fromLng: 80.3803711300596, toKm: 67, toLat: 6.686654820009496, toLng: 80.38648912184055, dataSource: "OSRM routing" },
+  { id: "rs-077", province: "Sabaragamuwa", roadNo: "B-034", roadName: "Ayagama - Kukulegama Road", reason: "Inundated", fromKm: 1, fromLat: 6.592662218729878, fromLng: 80.34587555552022, toKm: 2, toLat: 6.58563492566418, toLng: 80.35031909700727, dataSource: "OpenStreetMap" },
+  { id: "rs-078", province: "Sabaragamuwa", roadNo: "B-391", roadName: "Ratnapura - Wewalwatta Road", reason: "Inundated", fromKm: 10, fromLat: 6.714501100285217, fromLng: 80.5095976, toKm: 11, toLat: 6.711179802477163, toLng: 80.5146321244005, dataSource: "OpenStreetMap" },
+  { id: "rs-079", province: "Sabaragamuwa", roadNo: "B-181", roadName: "Kalawana - Deepdene - Rakwana Road", reason: "Inundated", fromKm: 5, fromLat: 6.496470916761644, fromLng: 80.40454518256097, toKm: 7, toLat: 6.482639158524534, toLng: 80.41619398624718, dataSource: "OpenStreetMap" },
+  { id: "rs-080", province: "Sabaragamuwa", roadNo: "B-482", roadName: "Yatiyanthota - Poonagala - Meenagala Road", reason: "Landslide", fromKm: 0, fromLat: 7.0712339, fromLng: 80.4260071, toKm: 0, toLat: 7.0712339, toLng: 80.4260071, dataSource: "OpenStreetMap" },
+  { id: "rs-081", province: "Sabaragamuwa", roadNo: "B-039", roadName: "Balangoda - Rassagala Road", reason: "Landslide", fromKm: 0, fromLat: 6.7004142, fromLng: 80.6202856, toKm: 0, toLat: 6.7004142, toLng: 80.6202856, dataSource: "OpenStreetMap" },
+  { id: "rs-082", province: "Sabaragamuwa", roadNo: "B-222", roadName: "Kiriella - Nedurana - Eheliyagoda Road", reason: "Inundated", fromKm: 12, fromLat: 6.83789555691399, fromLng: 80.25976162245584, toKm: 13, toLat: 6.84521710153898, toLng: 80.26354154500507, dataSource: "OpenStreetMap" },
+  { id: "rs-083", province: "North Western", roadNo: "B-009", roadName: "Alawwa - Maharagama Road", reason: "Inundated", fromKm: 9, fromLat: 7.332852734921913, fromLng: 80.17857058078694, toKm: 10, toLat: 7.3377798310145135, toLng: 80.17133696631218, dataSource: "OpenStreetMap" },
+  { id: "rs-084", province: "North Western", roadNo: "B-009", roadName: "Alawwa - Maharagama Road", reason: "Inundated", fromKm: 0.6, fromLat: 7.295883081098129, fromLng: 80.2359045459381, toKm: 0.6, toLat: 7.295883081098129, toLng: 80.2359045459381, dataSource: "OpenStreetMap" },
+  { id: "rs-085", province: "North Western", roadNo: "B-009", roadName: "Alawwa - Maharagama Road (Alawwa Town)", reason: "Inundated", fromKm: 0, fromLat: 7.294102, fromLng: 80.2406216, toKm: 1, toLat: 7.297183538756281, toLng: 80.23259161816216, dataSource: "OpenStreetMap" },
+  { id: "rs-086", province: "North Western", roadNo: "B-308", roadName: "Narammala - Dankotuwa Road", reason: "Inundated", fromKm: 10.5, fromLat: 7.325628203256722, fromLng: 80.05003981408777, toKm: 27.2, toLat: 7.300429748274614, toLng: 79.90091786555793, dataSource: "OpenStreetMap" },
+  { id: "rs-087", province: "North Western", roadNo: "B-308", roadName: "Narammala - Dankotuwa Road", reason: "Inundated", fromKm: 0, fromLat: 7.3300122, fromLng: 80.1226537, toKm: 0, toLat: 7.3300122, toLng: 80.1226537, dataSource: "OpenStreetMap" },
+  { id: "rs-088", province: "Western", roadNo: "A-033", roadName: "Ja-Ela - Ekala - Gampaha - Yakkala", reason: "Inundated", fromKm: 2.5, fromLat: 7.092402178923764, fromLng: 79.90274701964209, toKm: 10, toLat: 7.092057038101598, toLng: 79.96019250662684, dataSource: "OSRM routing" },
+  { id: "rs-089", province: "Western", roadNo: "A-033", roadName: "Ja-Ela - Ekala - Gampaha - Yakkala", reason: "Inundated", fromKm: 12, fromLat: 7.094125856336562, fromLng: 79.97773047943713, toKm: 13, toLat: 7.093231689807783, toLng: 79.98673141211438, dataSource: "OSRM routing" },
+  { id: "rs-090", province: "Western", roadNo: "A-033", roadName: "Negombo - Kadirana Road", reason: "Inundated", fromKm: 1, fromLat: 7.207159515343405, fromLng: 79.84045065218481, toKm: 2, toLat: 7.205787521823518, toLng: 79.84939630738869, dataSource: "OSRM routing" },
+];
