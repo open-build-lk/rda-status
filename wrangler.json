@@ -16,7 +16,7 @@
     {
       "binding": "DB",
       "database_name": "rda-status-db",
-      "database_id": "local",
+      "database_id": "169b4220-37c7-488a-aa5d-f4912bdddedc",
       "migrations_dir": "./src/worker/db/migrations"
     }
   ],
