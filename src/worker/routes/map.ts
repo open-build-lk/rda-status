@@ -3,7 +3,7 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { createDb } from "../db";
 import { damageReports, roadSegments } from "../db/schema";
-import { eq, and, desc, or, inArray } from "drizzle-orm";
+import { eq, and, desc, or } from "drizzle-orm";
 import { snapToRoads, calculateMidpoint } from "../services/roadsService";
 
 const mapRoutes = new Hono<{ Bindings: Env }>();
