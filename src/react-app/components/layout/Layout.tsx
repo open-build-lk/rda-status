@@ -11,7 +11,11 @@ interface LayoutProps {
 
 // Separate component to access sidebar context
 function SidebarContent({ children }: { children: React.ReactNode }) {
-  const { isMobile, openMobile } = useSidebar();
+  const { state, isMobile, openMobile } = useSidebar();
+  const isCollapsed = state === "collapsed";
+  // Calculate margin based on sidebar state
+  // Sidebar expanded: 16rem (256px), collapsed: 3rem (48px), mobile: 0
+  const sidebarWidth = isMobile ? 0 : isCollapsed ? 48 : 256;
 
   // Hide main content on mobile when sidebar is open (to prevent map z-index issues)
   if (isMobile && openMobile) {
@@ -19,7 +23,13 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex h-screen w-full flex-col">
+    <div
+      className="flex h-screen flex-col transition-[margin,width] duration-200 ease-linear"
+      style={{
+        marginLeft: sidebarWidth,
+        width: `calc(100vw - ${sidebarWidth}px)`,
+      }}
+    >
       <header className="flex h-14 shrink-0 items-center gap-2 border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950">
         <div className="flex items-center gap-2 px-4">
           <SidebarTrigger className="-ml-1" />
