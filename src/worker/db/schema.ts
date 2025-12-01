@@ -1,5 +1,5 @@
 import { sqliteTable, text, integer, real, index } from "drizzle-orm/sqlite-core";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 
 // Re-export auth schema tables
 export {
@@ -11,6 +11,29 @@ export {
 
 // Import user for relations
 import { user } from "./auth-schema";
+
+// ============ USER INVITATIONS ============
+export const userInvitations = sqliteTable(
+  "user_invitations",
+  {
+    id: text("id").primaryKey(),
+    email: text("email").notNull(),
+    role: text("role").notNull(),
+    invitedBy: text("invited_by").references(() => user.id),
+    token: text("token").notNull().unique(),
+    status: text("status").notNull().default("pending"), // pending, accepted, expired, cancelled
+    expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
+    acceptedAt: integer("accepted_at", { mode: "timestamp" }),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .default(sql`(unixepoch())`)
+      .notNull(),
+  },
+  (table) => [
+    index("user_invitations_email_idx").on(table.email),
+    index("user_invitations_token_idx").on(table.token),
+    index("user_invitations_status_idx").on(table.status),
+  ]
+);
 
 // ============ LOCATIONS ============
 export const locations = sqliteTable(
@@ -287,6 +310,14 @@ export const userRelations = relations(user, ({ many }) => ({
   stateTransitions: many(stateTransitions),
   comments: many(comments),
   managedProjects: many(rebuildProjects),
+  sentInvitations: many(userInvitations),
+}));
+
+export const userInvitationsRelations = relations(userInvitations, ({ one }) => ({
+  inviter: one(user, {
+    fields: [userInvitations.invitedBy],
+    references: [user.id],
+  }),
 }));
 
 export const locationsRelations = relations(locations, ({ one, many }) => ({

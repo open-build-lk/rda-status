@@ -6,6 +6,7 @@ import {
   ChevronUp,
   LogOut,
   MapPin,
+  Users,
 } from "lucide-react";
 
 import { useAuthStore } from "@/stores/auth";
@@ -66,7 +67,13 @@ const adminItems: NavItem[] = [
     title: "Citizen Reports",
     url: "/admin/reports",
     icon: Shield,
-    roles: ["admin", "super_admin"],
+    roles: ["field_officer", "planner", "admin", "super_admin"],
+  },
+  {
+    title: "User Management",
+    url: "/admin/users",
+    icon: Users,
+    roles: ["super_admin"],
   },
 ];
 
