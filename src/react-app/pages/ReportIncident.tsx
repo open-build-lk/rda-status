@@ -1,10 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, MapPin, Loader2 } from "lucide-react";
+import { ArrowLeft, MapPin, Loader2, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CameraCapture } from "@/components/camera/CameraCapture";
 import { PhotoGallery, type Photo } from "@/components/camera/PhotoGallery";
@@ -12,6 +19,11 @@ import { IncidentCategorySelect } from "@/components/forms/IncidentCategorySelec
 import { PassabilityScale } from "@/components/forms/PassabilityScale";
 import { useIncidentReportStore } from "@/stores/incidentReport";
 import { useAuthStore } from "@/stores/auth";
+import {
+  provinces,
+  getDistrictsForProvince,
+  findProvinceByCoords,
+} from "@/data/sriLankaLocations";
 
 const MAX_PHOTOS = 5;
 
@@ -36,6 +48,10 @@ export function ReportIncident() {
     photos,
     latitude,
     longitude,
+    province,
+    district,
+    locationName,
+    isLoadingLocation,
     damageType,
     passabilityLevel,
     isSingleLane,
@@ -49,6 +65,10 @@ export function ReportIncident() {
     submittedReportId,
     addPhoto,
     removePhoto,
+    setProvince,
+    setDistrict,
+    setLocationName,
+    setIsLoadingLocation,
     setDamageType,
     setPassabilityLevel,
     setIsSingleLane,
@@ -62,6 +82,71 @@ export function ReportIncident() {
     setSubmittedReport,
     reset,
   } = useIncidentReportStore();
+
+  // Fetch location info when coordinates change
+  useEffect(() => {
+    if (latitude && longitude && !province && !isLoadingLocation) {
+      // First, try to detect province from coordinates
+      const detectedProvince = findProvinceByCoords(latitude, longitude);
+      if (detectedProvince) {
+        setProvince(detectedProvince.id);
+      }
+
+      // Fetch reverse geocoding for location name
+      setIsLoadingLocation(true);
+      interface NominatimResponse {
+        address?: {
+          road?: string;
+          neighbourhood?: string;
+          suburb?: string;
+          village?: string;
+          town?: string;
+          city?: string;
+          county?: string;
+          state_district?: string;
+          state?: string;
+        };
+      }
+
+      fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=16&addressdetails=1`,
+        {
+          headers: {
+            "User-Agent": "SriLankaRoadStatus/1.0",
+            "Accept-Language": "en",
+          },
+        }
+      )
+        .then((res) => res.json() as Promise<NominatimResponse>)
+        .then((data) => {
+          if (data.address) {
+            const addr = data.address;
+            // Build location name
+            const parts: string[] = [];
+            if (addr.road) parts.push(addr.road);
+            const area = addr.neighbourhood || addr.suburb || addr.village || addr.town;
+            if (area && !parts.includes(area)) parts.push(area);
+            if (parts.length > 0) {
+              setLocationName(parts.join(", "));
+            }
+
+            // Try to detect district from address
+            const districtName = addr.county || addr.state_district || addr.city;
+            if (districtName && province) {
+              const districts = getDistrictsForProvince(province);
+              const matchedDistrict = districts.find(
+                (d) => d.name.toLowerCase() === districtName.toLowerCase()
+              );
+              if (matchedDistrict) {
+                setDistrict(matchedDistrict.id);
+              }
+            }
+          }
+        })
+        .catch((err) => console.error("Reverse geocoding failed:", err))
+        .finally(() => setIsLoadingLocation(false));
+    }
+  }, [latitude, longitude]);
 
   const handlePhotoCapture = (blob: Blob, coords: { lat: number; lng: number } | null) => {
     const photo: Photo = {
@@ -136,6 +221,9 @@ export function ReportIncident() {
       const reportData = {
         latitude,
         longitude,
+        province: province || undefined,
+        district: district || undefined,
+        locationName: locationName || undefined,
         damageType,
         passabilityLevel: passabilityLevel || undefined,
         isSingleLane,
@@ -286,6 +374,100 @@ export function ReportIncident() {
             )}
           </CardContent>
         </Card>
+
+        {/* Step 1.5: Location Verification - shown after photos with coordinates */}
+        {hasPhotos && latitude && longitude && (
+          <Card className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <span className={`w-6 h-6 rounded-full text-sm flex items-center justify-center ${
+                  province
+                    ? "bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400"
+                    : "bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-400"
+                }`}>
+                  {province ? "✓" : <Navigation className="w-3 h-3" />}
+                </span>
+                Verify Location
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {isLoadingLocation && (
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Detecting location...
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="province">Province</Label>
+                  <Select
+                    value={province || ""}
+                    onValueChange={(value) => setProvince(value || null)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select province" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {provinces.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="district">District</Label>
+                  <Select
+                    value={district || ""}
+                    onValueChange={(value) => setDistrict(value || null)}
+                    disabled={!province}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={province ? "Select district" : "Select province first"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {province &&
+                        getDistrictsForProvince(province).map((d) => (
+                          <SelectItem key={d.id} value={d.id}>
+                            {d.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="locationName">Road / Location Name</Label>
+                <Input
+                  id="locationName"
+                  placeholder="e.g., Kandy Road near Town Hall"
+                  value={locationName}
+                  onChange={(e) => setLocationName(e.target.value)}
+                />
+                <p className="text-xs text-gray-500">
+                  Auto-detected from GPS. Edit if needed.
+                </p>
+              </div>
+
+              <div className="text-xs text-gray-500 bg-gray-50 dark:bg-gray-800 rounded-lg p-2">
+                <span className="font-medium">GPS:</span>{" "}
+                {latitude.toFixed(5)}, {longitude.toFixed(5)}
+                <a
+                  href={`https://www.google.com/maps?q=${latitude},${longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-2 text-primary-600 hover:underline"
+                >
+                  View on map
+                </a>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Step 2: Incident Details - shown after photos */}
         {hasPhotos && (

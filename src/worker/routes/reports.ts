@@ -146,6 +146,11 @@ const createReportSchema = z.object({
     "other",
   ]),
 
+  // Location info (optional - user-provided or auto-detected)
+  province: z.string().max(50).optional(),
+  district: z.string().max(50).optional(),
+  locationName: z.string().max(200).optional(), // Road/location name
+
   // Optional
   anonymousName: z.string().max(100).optional(),
   anonymousEmail: z.string().email().optional(),
@@ -190,8 +195,8 @@ reportsRoutes.post(
     const reportId = crypto.randomUUID();
     const reportNumber = generateReportNumber();
 
-    // Reverse geocode to get location name (don't block on failure)
-    const locationName = await reverseGeocode(data.latitude, data.longitude);
+    // Use user-provided location name or fall back to reverse geocoding
+    const locationName = data.locationName || await reverseGeocode(data.latitude, data.longitude);
 
     // Create the damage report
     await db.insert(damageReports).values({
@@ -205,7 +210,14 @@ reportsRoutes.post(
       sourceChannel: "mobile_web",
       latitude: data.latitude,
       longitude: data.longitude,
-      locationName,
+      // Store province/district info in locationName if provided
+      locationName: locationName
+        ? (data.province && data.district
+            ? `${locationName} (${data.district}, ${data.province})`
+            : data.province
+            ? `${locationName} (${data.province})`
+            : locationName)
+        : null,
       assetType: "road",
       damageType: data.damageType,
       severity: 2, // Default medium severity for citizen reports

@@ -29,6 +29,10 @@ interface IncidentReportState {
   // Location (from first photo or manual)
   latitude: number | null;
   longitude: number | null;
+  province: string | null;
+  district: string | null;
+  locationName: string;
+  isLoadingLocation: boolean;
 
   // Step 2: Incident Details
   damageType: DamageType | null;
@@ -57,6 +61,10 @@ interface IncidentReportActions {
 
   // Location actions
   setLocation: (lat: number, lng: number) => void;
+  setProvince: (province: string | null) => void;
+  setDistrict: (district: string | null) => void;
+  setLocationName: (name: string) => void;
+  setIsLoadingLocation: (loading: boolean) => void;
 
   // Form field actions
   setDamageType: (type: DamageType) => void;
@@ -81,6 +89,10 @@ const initialState: IncidentReportState = {
   photos: [],
   latitude: null,
   longitude: null,
+  province: null,
+  district: null,
+  locationName: "",
+  isLoadingLocation: false,
   damageType: null,
   passabilityLevel: null,
   isSingleLane: false,
@@ -139,6 +151,22 @@ export const useIncidentReportStore = create<IncidentReportState & IncidentRepor
 
       setLocation: (lat: number, lng: number) => {
         set({ latitude: lat, longitude: lng });
+      },
+
+      setProvince: (province: string | null) => {
+        set({ province, district: null }); // Reset district when province changes
+      },
+
+      setDistrict: (district: string | null) => {
+        set({ district });
+      },
+
+      setLocationName: (name: string) => {
+        set({ locationName: name });
+      },
+
+      setIsLoadingLocation: (loading: boolean) => {
+        set({ isLoadingLocation: loading });
       },
 
       setDamageType: (type: DamageType) => {
