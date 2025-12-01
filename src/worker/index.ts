@@ -5,6 +5,7 @@ import { mapRoutes } from "./routes/map";
 import { adminRoutes } from "./routes/admin";
 import { reportsRoutes } from "./routes/reports";
 import { uploadRoutes } from "./routes/upload";
+import { invitationsRoutes } from "./routes/invitations";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -29,6 +30,7 @@ app.route("/api/v1/map", mapRoutes);
 app.route("/api/v1/admin", adminRoutes);
 app.route("/api/v1/reports", reportsRoutes);
 app.route("/api/v1/upload", uploadRoutes);
+app.route("/api/v1/invitations", invitationsRoutes);
 
 // Catch-all route to serve SPA for non-API routes
 // This is required when using run_worker_first: true

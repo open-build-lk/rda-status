@@ -7,3 +7,5 @@ export { SubmitReport } from "./SubmitReport";
 export { ReportIncident } from "./ReportIncident";
 export { ReportVerified } from "./ReportVerified";
 export { AdminReports } from "./AdminReports";
+export { AdminUsers } from "./AdminUsers";
+export { AcceptInvitation } from "./AcceptInvitation";

@@ -11,6 +11,8 @@ import {
   ReportIncident,
   ReportVerified,
   AdminReports,
+  AdminUsers,
+  AcceptInvitation,
 } from "@/pages";
 
 function AppContent() {
@@ -55,11 +57,22 @@ function AppContent() {
         <Route
           path="/admin/reports"
           element={
-            <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+            <ProtectedRoute allowedRoles={["field_officer", "planner", "admin", "super_admin"]}>
               <AdminReports />
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedRoute allowedRoles={["super_admin"]}>
+              <AdminUsers />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Public invitation acceptance route */}
+        <Route path="/accept-invite" element={<AcceptInvitation />} />
 
         {/* 404 */}
         <Route
