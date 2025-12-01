@@ -58,9 +58,9 @@ export function Home() {
   }, [segments, incidents]);
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full max-h-full flex-col overflow-hidden">
       {/* Stats bar */}
-      <div className="border-b border-gray-200 bg-gray-50 px-2 py-2 dark:border-gray-800 dark:bg-gray-900 sm:px-4 sm:py-3">
+      <div className="flex-shrink-0 border-b border-gray-200 bg-gray-50 px-2 py-2 dark:border-gray-800 dark:bg-gray-900 sm:px-4 sm:py-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 overflow-x-auto sm:gap-4">
             {/* Total blocked */}

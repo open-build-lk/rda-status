@@ -20,7 +20,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div
-      className="flex h-screen flex-col overflow-hidden transition-[margin,width] duration-200 ease-linear"
+      className="flex h-screen flex-col transition-[margin,width] duration-200 ease-linear"
       style={{
         marginLeft: sidebarWidth,
         width: `calc(100vw - ${sidebarWidth}px)`,
@@ -35,7 +35,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
           </span>
         </div>
       </header>
-      <main className="min-h-0 flex-1 overflow-hidden bg-gray-50 dark:bg-gray-900">
+      <main className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
         {children}
       </main>
     </div>
