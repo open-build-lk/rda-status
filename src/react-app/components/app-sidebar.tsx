@@ -104,6 +104,11 @@ export function AppSidebar() {
       .slice(0, 2);
   };
 
+  const shortenName = (fullName: string, maxLength = 20) => {
+    if (fullName.length <= maxLength) return fullName;
+    return fullName.substring(0, maxLength) + '...';
+  };
+
   const filterByRole = (items: NavItem[]) => {
     return items.filter((item) => {
       if (!item.roles) return true;
@@ -219,9 +224,11 @@ export function AppSidebar() {
                     </AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">{user?.name}</span>
+                    <span className="truncate font-semibold">
+                      {user?.name ? shortenName(user.name, 20) : ""}
+                    </span>
                     <span className="truncate text-xs text-gray-500">
-                      {user?.email}
+                      {user?.email ? shortenName(user.email, 25) : ""}
                     </span>
                   </div>
                   <ChevronUp className="ml-auto size-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
