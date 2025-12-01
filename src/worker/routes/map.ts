@@ -82,11 +82,11 @@ mapRoutes.post(
   }
 );
 
-// GET /api/v1/map/segments - Get all road segments with damage info
+// GET /api/v1/map/segments - Get only verified road segments for public display
 mapRoutes.get("/segments", async (c) => {
   const db = createDb(c.env.DB);
 
-  // Get segments with their associated damage reports
+  // Get segments with their associated damage reports - ONLY verified ones
   const results = await db
     .select({
       id: roadSegments.id,
@@ -105,7 +105,8 @@ mapRoutes.get("/segments", async (c) => {
       reportedAt: damageReports.createdAt,
     })
     .from(roadSegments)
-    .leftJoin(damageReports, eq(roadSegments.reportId, damageReports.id));
+    .innerJoin(damageReports, eq(roadSegments.reportId, damageReports.id))
+    .where(eq(damageReports.status, "verified"));
 
   // Format for frontend
   const formatted = results.map((s) => {
