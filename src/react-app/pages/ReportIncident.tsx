@@ -267,8 +267,8 @@ export function ReportIncident() {
     const showVerificationMessage = !user && anonymousEmail;
 
     return (
-      <div className="flex h-full items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
-        <div className="max-w-md w-full">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
+        <div className="max-w-md mx-auto pt-8">
           <Card>
             <CardHeader className="text-center">
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
@@ -335,9 +335,9 @@ export function ReportIncident() {
 
   // Main form
   return (
-    <div className="flex h-full flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex-shrink-0">
+      <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
         <div className="flex items-center gap-3 max-w-md mx-auto">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="w-5 h-5" />
@@ -347,8 +347,7 @@ export function ReportIncident() {
       </div>
 
       {/* Form */}
-      <div className="flex-1 overflow-auto">
-        <div className="max-w-md mx-auto p-4 space-y-6 pb-24">
+      <div className="max-w-md mx-auto p-4 space-y-6 pb-24">
         {/* Step 1: Photos */}
         <Card>
           <CardHeader className="pb-3">
@@ -610,7 +609,6 @@ export function ReportIncident() {
             {submitError}
           </div>
         )}
-        </div>
       </div>
 
       {/* Fixed submit button - only show when ready */}
