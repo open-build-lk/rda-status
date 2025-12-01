@@ -1,8 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import {
   Home,
-  LayoutDashboard,
-  FolderKanban,
   Shield,
   AlertTriangle,
   ChevronUp,
