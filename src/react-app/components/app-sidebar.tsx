@@ -25,6 +25,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarRail,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -81,9 +82,17 @@ export function AppSidebar() {
   const { user, logout } = useAuthStore();
   const location = useLocation();
   const userRole = user?.role || "citizen";
+  const { isMobile, setOpenMobile } = useSidebar();
 
   const handleLogout = async () => {
     await logout();
+  };
+
+  const handleLinkClick = () => {
+    // Close sidebar on mobile when a link is clicked
+    if (isMobile) {
+      setOpenMobile(false);
+    }
   };
 
   const getInitials = (name: string) => {
@@ -111,7 +120,7 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <Link to="/">
+              <Link to="/" onClick={handleLinkClick}>
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary-600 text-white">
                   <MapPin className="size-4" />
                 </div>
@@ -138,7 +147,7 @@ export function AppSidebar() {
                     isActive={location.pathname === item.url}
                     tooltip={item.title}
                   >
-                    <Link to={item.url}>
+                    <Link to={item.url} onClick={handleLinkClick}>
                       <item.icon className="size-4" />
                       <span>{item.title}</span>
                     </Link>
@@ -162,7 +171,7 @@ export function AppSidebar() {
                       isActive={location.pathname === item.url}
                       tooltip={item.title}
                     >
-                      <Link to={item.url}>
+                      <Link to={item.url} onClick={handleLinkClick}>
                         <item.icon className="size-4" />
                         <span>{item.title}</span>
                       </Link>
@@ -186,7 +195,7 @@ export function AppSidebar() {
                   tooltip="Report Incident"
                   className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20"
                 >
-                  <Link to="/report">
+                  <Link to="/report" onClick={handleLinkClick}>
                     <AlertTriangle className="size-4" />
                     <span>Report Incident</span>
                   </Link>
