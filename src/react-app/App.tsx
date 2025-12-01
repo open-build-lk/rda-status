@@ -10,6 +10,7 @@ import {
   Register,
   SubmitReport,
   ReportIncident,
+  ReportVerified,
 } from "@/pages";
 
 function AppContent() {
@@ -21,6 +22,7 @@ function AppContent() {
         <Route path="/reports" element={<Reports />} />
         <Route path="/submit" element={<SubmitReport />} />
         <Route path="/report" element={<ReportIncident />} />
+        <Route path="/report-verified" element={<ReportVerified />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 

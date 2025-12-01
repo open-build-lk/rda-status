@@ -38,6 +38,7 @@ interface IncidentReportState {
 
   // Step 3: Contact Info
   anonymousName: string;
+  anonymousEmail: string;
   anonymousContact: string;
   description: string;
 
@@ -63,6 +64,7 @@ interface IncidentReportActions {
   setIsSingleLane: (value: boolean) => void;
   setBlockedDistance: (meters: number | null) => void;
   setAnonymousName: (name: string) => void;
+  setAnonymousEmail: (email: string) => void;
   setAnonymousContact: (contact: string) => void;
   setDescription: (desc: string) => void;
 
@@ -84,6 +86,7 @@ const initialState: IncidentReportState = {
   isSingleLane: false,
   blockedDistanceMeters: null,
   anonymousName: "",
+  anonymousEmail: "",
   anonymousContact: "",
   description: "",
   isSubmitting: false,
@@ -158,6 +161,10 @@ export const useIncidentReportStore = create<IncidentReportState & IncidentRepor
         set({ anonymousName: name });
       },
 
+      setAnonymousEmail: (email: string) => {
+        set({ anonymousEmail: email });
+      },
+
       setAnonymousContact: (contact: string) => {
         set({ anonymousContact: contact });
       },
@@ -198,6 +205,7 @@ export const useIncidentReportStore = create<IncidentReportState & IncidentRepor
         isSingleLane: state.isSingleLane,
         blockedDistanceMeters: state.blockedDistanceMeters,
         anonymousName: state.anonymousName,
+        anonymousEmail: state.anonymousEmail,
         anonymousContact: state.anonymousContact,
         description: state.description,
       }),

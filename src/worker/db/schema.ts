@@ -42,6 +42,7 @@ export const damageReports = sqliteTable(
     submitterId: text("submitter_id").references(() => user.id),
     // Anonymous submissions may not have a submitter
     anonymousName: text("anonymous_name"),
+    anonymousEmail: text("anonymous_email"),
     anonymousContact: text("anonymous_contact"),
     sourceType: text("source_type").notNull(), // citizen, field_officer, other_agency
     sourceChannel: text("source_channel").notNull(), // web, mobile_web, bulk_upload

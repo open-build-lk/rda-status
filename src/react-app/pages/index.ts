@@ -6,3 +6,4 @@ export { Login } from "./Login";
 export { Register } from "./Register";
 export { SubmitReport } from "./SubmitReport";
 export { ReportIncident } from "./ReportIncident";
+export { ReportVerified } from "./ReportVerified";
