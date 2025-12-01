@@ -1,4 +1,4 @@
-import { MapPin, LogIn, LogOut, User } from "lucide-react";
+import { MapPin, LogIn, LogOut, User, AlertTriangle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuthStore } from "@/stores/auth";
 
@@ -18,8 +18,16 @@ export function Header() {
           <span className="text-sm font-semibold sm:text-base">Sri Lanka Road Status</span>
         </Link>
 
-        {/* Auth section */}
+        {/* Actions and Auth section */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Report Incident button */}
+          <Link
+            to="/report"
+            className="flex items-center gap-1 rounded-md bg-red-600 px-2 py-1.5 text-sm font-medium text-white transition-colors hover:bg-red-700 sm:px-3"
+          >
+            <AlertTriangle className="h-4 w-4" />
+            <span className="hidden sm:inline">Report</span>
+          </Link>
           {!isInitialized ? (
             <div className="h-4 w-16 animate-pulse rounded bg-gray-200" />
           ) : user ? (

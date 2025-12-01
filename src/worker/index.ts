@@ -3,6 +3,8 @@ import { cors } from "hono/cors";
 import { authRoutes } from "./routes/auth";
 import { mapRoutes } from "./routes/map";
 import { adminRoutes } from "./routes/admin";
+import { reportsRoutes } from "./routes/reports";
+import { uploadRoutes } from "./routes/upload";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -25,5 +27,13 @@ app.get("/api/", (c) => c.json({ name: "OpenRebuildLK API", version: "1.0.0" }))
 app.route("/api/auth", authRoutes);
 app.route("/api/v1/map", mapRoutes);
 app.route("/api/v1/admin", adminRoutes);
+app.route("/api/v1/reports", reportsRoutes);
+app.route("/api/v1/upload", uploadRoutes);
+
+// Catch-all route to serve SPA for non-API routes
+// This is required when using run_worker_first: true
+app.get("*", (c) => {
+  return c.env.ASSETS.fetch(c.req.raw);
+});
 
 export default app;

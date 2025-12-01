@@ -40,17 +40,40 @@ export type AssetType = (typeof AssetType)[keyof typeof AssetType];
 
 // Damage Types
 export const DamageType = {
+  TREE_FALL: "tree_fall",
+  BRIDGE_COLLAPSE: "bridge_collapse",
+  LANDSLIDE: "landslide",
+  FLOODING: "flooding",
+  ROAD_BREAKAGE: "road_breakage",
   WASHOUT: "washout",
   COLLAPSE: "collapse",
   CRACKING: "cracking",
   EROSION: "erosion",
   BLOCKAGE: "blockage",
   TRACK_MISALIGNMENT: "track_misalignment",
-  LANDSLIDE: "landslide",
-  FLOODING: "flooding",
   OTHER: "other",
 } as const;
 export type DamageType = (typeof DamageType)[keyof typeof DamageType];
+
+// Passability Levels (ordered from least passable to most passable)
+export const PassabilityLevel = {
+  UNPASSABLE: "unpassable",
+  FOOT: "foot",
+  BIKE: "bike",
+  THREE_WHEELER: "3wheeler",
+  CAR: "car",
+  BUS: "bus",
+  TRUCK: "truck",
+} as const;
+export type PassabilityLevel = (typeof PassabilityLevel)[keyof typeof PassabilityLevel];
+
+// Submission Source
+export const SubmissionSource = {
+  CITIZEN_WEB: "citizen_web",
+  CITIZEN_MOBILE: "citizen_mobile",
+  OFFICIAL: "official",
+} as const;
+export type SubmissionSource = (typeof SubmissionSource)[keyof typeof SubmissionSource];
 
 // Severity Levels
 export const Severity = {

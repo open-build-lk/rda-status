@@ -3,7 +3,7 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { createDb } from "../db";
 import { damageReports, roadSegments } from "../db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { snapToRoads, calculateMidpoint } from "../services/roadsService";
 
 const mapRoutes = new Hono<{ Bindings: Env }>();
@@ -169,6 +169,33 @@ mapRoutes.get("/segments/verified", async (c) => {
   });
 
   return c.json(formatted);
+});
+
+// GET /api/v1/map/incidents - Get approved citizen incident reports for map display
+mapRoutes.get("/incidents", async (c) => {
+  const db = createDb(c.env.DB);
+
+  const reports = await db
+    .select({
+      id: damageReports.id,
+      latitude: damageReports.latitude,
+      longitude: damageReports.longitude,
+      damageType: damageReports.damageType,
+      passabilityLevel: damageReports.passabilityLevel,
+      isSingleLane: damageReports.isSingleLane,
+      description: damageReports.description,
+      createdAt: damageReports.createdAt,
+    })
+    .from(damageReports)
+    .where(
+      and(
+        eq(damageReports.status, "verified"),
+        eq(damageReports.sourceType, "citizen")
+      )
+    )
+    .orderBy(desc(damageReports.createdAt));
+
+  return c.json(reports);
 });
 
 export { mapRoutes };

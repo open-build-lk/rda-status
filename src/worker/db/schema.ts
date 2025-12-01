@@ -69,6 +69,13 @@ export const damageReports = sqliteTable(
     status: text("status").notNull().default("new"),
     priorityScore: real("priority_score"),
     priorityVersion: text("priority_version"),
+    // Citizen report fields
+    passabilityLevel: text("passability_level"), // unpassable, foot, bike, 3wheeler, car, bus, truck
+    isSingleLane: integer("is_single_lane", { mode: "boolean" }).default(false),
+    blockedDistanceMeters: real("blocked_distance_meters"),
+    submissionSource: text("submission_source"), // citizen_web, citizen_mobile, official
+    isVerifiedSubmitter: integer("is_verified_submitter", { mode: "boolean" }).default(false),
+    claimToken: text("claim_token"), // For anonymous users to claim reports later
     // Timestamps
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
@@ -81,6 +88,7 @@ export const damageReports = sqliteTable(
     index("reports_asset_type_idx").on(table.assetType),
     index("reports_priority_idx").on(table.priorityScore),
     index("reports_location_idx").on(table.latitude, table.longitude),
+    index("reports_claim_token_idx").on(table.claimToken),
   ]
 );
 

@@ -9,6 +9,7 @@ import {
   Login,
   Register,
   SubmitReport,
+  ReportIncident,
 } from "@/pages";
 
 function AppContent() {
@@ -19,6 +20,7 @@ function AppContent() {
         <Route path="/" element={<Home />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/submit" element={<SubmitReport />} />
+        <Route path="/report" element={<ReportIncident />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 

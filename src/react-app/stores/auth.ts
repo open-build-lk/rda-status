@@ -12,78 +12,52 @@ interface User {
   image?: string;
 }
 
-interface RegisterData {
-  email: string;
-  password: string;
-  name: string;
-  phone?: string;
-}
-
 interface AuthState {
   user: User | null;
   isLoading: boolean;
   error: string | null;
   isInitialized: boolean;
+  magicLinkSent: boolean;
+  magicLinkEmail: string | null;
 }
 
 interface AuthActions {
-  login: (email: string, password: string) => Promise<boolean>;
-  register: (data: RegisterData) => Promise<boolean>;
+  sendMagicLink: (email: string, name?: string) => Promise<boolean>;
   logout: () => Promise<void>;
   refreshSession: () => Promise<void>;
   clearError: () => void;
+  resetMagicLinkState: () => void;
 }
 
-export const useAuthStore = create<AuthState & AuthActions>()((set, get) => ({
+export const useAuthStore = create<AuthState & AuthActions>()((set) => ({
   user: null,
   isLoading: false,
   error: null,
   isInitialized: false,
+  magicLinkSent: false,
+  magicLinkEmail: null,
 
-  login: async (email: string, password: string): Promise<boolean> => {
-    set({ isLoading: true, error: null });
+  sendMagicLink: async (email: string, name?: string): Promise<boolean> => {
+    set({ isLoading: true, error: null, magicLinkSent: false });
     try {
-      const result = await authClient.signIn.email({
+      const result = await authClient.signIn.magicLink({
         email,
-        password,
+        name,
+        callbackURL: "/",
       });
 
       if (result.error) {
-        throw new Error(result.error.message || "Invalid credentials");
+        throw new Error(result.error.message || "Failed to send magic link");
       }
 
-      // Refresh session to get user data
-      await get().refreshSession();
-      set({ isLoading: false });
-      return true;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Login failed";
-      set({ error: message, isLoading: false });
-      return false;
-    }
-  },
-
-  register: async (data: RegisterData): Promise<boolean> => {
-    set({ isLoading: true, error: null });
-    try {
-      const result = await authClient.signUp.email({
-        email: data.email,
-        password: data.password,
-        name: data.name,
-        phone: data.phone,
+      set({
+        isLoading: false,
+        magicLinkSent: true,
+        magicLinkEmail: email,
       });
-
-      if (result.error) {
-        throw new Error(result.error.message || "Registration failed");
-      }
-
-      // Refresh session to get user data
-      await get().refreshSession();
-      set({ isLoading: false });
       return true;
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Registration failed";
+      const message = err instanceof Error ? err.message : "Failed to send magic link";
       set({ error: message, isLoading: false });
       return false;
     }
@@ -95,7 +69,7 @@ export const useAuthStore = create<AuthState & AuthActions>()((set, get) => ({
     } catch {
       // Ignore errors during sign out
     }
-    set({ user: null, error: null });
+    set({ user: null, error: null, magicLinkSent: false, magicLinkEmail: null });
   },
 
   refreshSession: async () => {
@@ -116,6 +90,8 @@ export const useAuthStore = create<AuthState & AuthActions>()((set, get) => ({
             image: user.image || undefined,
           },
           isInitialized: true,
+          magicLinkSent: false,
+          magicLinkEmail: null,
         });
       } else {
         set({ user: null, isInitialized: true });
@@ -127,6 +103,10 @@ export const useAuthStore = create<AuthState & AuthActions>()((set, get) => ({
 
   clearError: () => {
     set({ error: null });
+  },
+
+  resetMagicLinkState: () => {
+    set({ magicLinkSent: false, magicLinkEmail: null, error: null });
   },
 }));
 
