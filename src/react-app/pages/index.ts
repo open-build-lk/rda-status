@@ -7,3 +7,4 @@ export { Register } from "./Register";
 export { SubmitReport } from "./SubmitReport";
 export { ReportIncident } from "./ReportIncident";
 export { ReportVerified } from "./ReportVerified";
+export { AdminReports } from "./AdminReports";

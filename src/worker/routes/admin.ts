@@ -1,6 +1,9 @@
 import { Hono } from "hono";
+import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
 import { createDb } from "../db";
-import { damageReports, roadSegments } from "../db/schema";
+import { damageReports, roadSegments, mediaAttachments } from "../db/schema";
+import { eq, desc } from "drizzle-orm";
 import {
   initialRoadSegments,
   mapReasonToDamageType,
@@ -109,5 +112,90 @@ adminRoutes.get("/segments-count", requireRole("admin", "super_admin"), async (c
   const results = await db.select().from(roadSegments);
   return c.json({ count: results.length });
 });
+
+// GET /api/v1/admin/reports - Get all citizen reports for admin review
+// Requires admin or super_admin role
+adminRoutes.get("/reports", requireRole("admin", "super_admin"), async (c) => {
+  const db = createDb(c.env.DB);
+
+  const reports = await db
+    .select({
+      id: damageReports.id,
+      reportNumber: damageReports.reportNumber,
+      damageType: damageReports.damageType,
+      status: damageReports.status,
+      latitude: damageReports.latitude,
+      longitude: damageReports.longitude,
+      description: damageReports.description,
+      passabilityLevel: damageReports.passabilityLevel,
+      anonymousName: damageReports.anonymousName,
+      anonymousEmail: damageReports.anonymousEmail,
+      anonymousContact: damageReports.anonymousContact,
+      isVerifiedSubmitter: damageReports.isVerifiedSubmitter,
+      sourceType: damageReports.sourceType,
+      createdAt: damageReports.createdAt,
+    })
+    .from(damageReports)
+    .orderBy(desc(damageReports.createdAt));
+
+  return c.json(reports);
+});
+
+// GET /api/v1/admin/reports/:id - Get single report with media
+// Requires admin or super_admin role
+adminRoutes.get("/reports/:id", requireRole("admin", "super_admin"), async (c) => {
+  const db = createDb(c.env.DB);
+  const { id } = c.req.param();
+
+  const [report] = await db
+    .select()
+    .from(damageReports)
+    .where(eq(damageReports.id, id));
+
+  if (!report) {
+    return c.json({ error: "Report not found" }, 404);
+  }
+
+  const media = await db
+    .select()
+    .from(mediaAttachments)
+    .where(eq(mediaAttachments.reportId, id));
+
+  return c.json({ ...report, media });
+});
+
+// Update report status schema
+const updateStatusSchema = z.object({
+  status: z.enum(["new", "verified", "in_progress", "resolved", "rejected"]),
+});
+
+// PATCH /api/v1/admin/reports/:id/status - Update report status
+// Requires admin or super_admin role
+adminRoutes.patch(
+  "/reports/:id/status",
+  requireRole("admin", "super_admin"),
+  zValidator("json", updateStatusSchema),
+  async (c) => {
+    const db = createDb(c.env.DB);
+    const { id } = c.req.param();
+    const { status } = c.req.valid("json");
+
+    const [report] = await db
+      .select()
+      .from(damageReports)
+      .where(eq(damageReports.id, id));
+
+    if (!report) {
+      return c.json({ error: "Report not found" }, 404);
+    }
+
+    await db
+      .update(damageReports)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(damageReports.id, id));
+
+    return c.json({ success: true, status });
+  }
+);
 
 export { adminRoutes };
