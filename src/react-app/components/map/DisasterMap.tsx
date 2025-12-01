@@ -11,10 +11,12 @@ import { DivIcon, LatLngExpression } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { MapLegend } from "./MapLegend";
 import { useRoadSegments, ProcessedRoadSegment } from "@/hooks/useRoadSegments";
+import { useCitizenIncidents, ProcessedIncident } from "@/hooks/useCitizenIncidents";
 import { useMapViewStore } from "@/stores/mapView";
 
 // Re-export for backwards compatibility
 export type RoadSegmentData = ProcessedRoadSegment;
+export type { ProcessedIncident };
 
 // All blocked roads are red
 const BLOCKED_ROAD_COLOR = "#DC2626";
@@ -61,6 +63,34 @@ function createDamageIcon(
   });
 }
 
+// Create marker icon for citizen incidents (point-based, not segment-based)
+function createIncidentIcon(damageType: string): DivIcon {
+  const config = DAMAGE_ICONS[damageType] || DAMAGE_ICONS.other;
+
+  return new DivIcon({
+    html: `
+      <div style="
+        background: white;
+        border: 3px solid #7C3AED;
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        box-shadow: 0 2px 8px rgba(124, 58, 237, 0.4);
+        cursor: pointer;
+      ">
+        ${config.emoji}
+      </div>
+    `,
+    className: "incident-marker",
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+  });
+}
+
 // MapController - handles programmatic map panning
 function MapController() {
   const map = useMap();
@@ -92,8 +122,12 @@ export { useRoadSegments } from "@/hooks/useRoadSegments";
 export function DisasterMap() {
   // Sri Lanka center coordinates
   const center: LatLngExpression = [7.8731, 80.7718];
-  const { segments, isLoading, error } = useRoadSegments();
+  const { segments, isLoading: segmentsLoading, error: segmentsError } = useRoadSegments();
+  const { incidents, isLoading: incidentsLoading, error: incidentsError } = useCitizenIncidents();
   const { selectedSegmentId } = useMapViewStore();
+
+  const isLoading = segmentsLoading || incidentsLoading;
+  const error = segmentsError || incidentsError;
 
   if (isLoading) {
     return (
@@ -193,6 +227,37 @@ export function DisasterMap() {
             </Marker>
           );
         })}
+
+        {/* Citizen incident markers (point-based, purple border) */}
+        {incidents.map((incident) => (
+          <Marker
+            key={`incident-${incident.id}`}
+            position={incident.position}
+            icon={createIncidentIcon(incident.damageType)}
+          >
+            <Popup>
+              <div className="min-w-48">
+                <div className="mb-2 flex items-center gap-2">
+                  <span className="rounded bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">
+                    Citizen Report
+                  </span>
+                </div>
+                <h3 className="mb-1 text-base font-bold capitalize">
+                  {incident.damageType.replace("_", " ")}
+                </h3>
+                <p className="mb-1 text-sm">
+                  <span className="font-medium">Passability:</span>{" "}
+                  {incident.passabilityLevel.replace("_", " ")}
+                  {incident.isSingleLane && " (Single lane)"}
+                </p>
+                <p className="mb-2 text-sm">{incident.description}</p>
+                <p className="text-xs text-gray-500">
+                  Reported: {new Date(incident.createdAt).toLocaleDateString()}
+                </p>
+              </div>
+            </Popup>
+          </Marker>
+        ))}
       </MapContainer>
 
       <MapLegend />

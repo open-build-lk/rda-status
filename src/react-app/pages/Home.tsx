@@ -9,51 +9,53 @@ import {
 } from "lucide-react";
 import { DisasterMap } from "@/components/map";
 import { RoadTable } from "@/components/road-table";
-import {
-  initialRoadSegments,
-  mapReasonToDamageType,
-  mapReasonToSeverity,
-} from "@/data/initialRoadSegments";
+import { useRoadSegments } from "@/hooks/useRoadSegments";
+import { useCitizenIncidents } from "@/hooks/useCitizenIncidents";
 
 export function Home() {
   const [showMobileList, setShowMobileList] = useState(false);
+  const { segments } = useRoadSegments();
+  const { incidents } = useCitizenIncidents();
 
-  // Compute stats from initial road segments
+  // Compute stats from fetched road segments + citizen incidents
   const stats = useMemo(() => {
-    // Filter to only road segments (not point damage)
-    const segments = initialRoadSegments.filter(
-      (seg) => seg.fromLat !== seg.toLat || seg.fromLng !== seg.toLng
-    );
-
-    // Count by damage type
+    // Count by damage type from both sources
     const damageTypes: Record<string, number> = {};
+
+    // Count from road segments
     segments.forEach((seg) => {
-      const type = mapReasonToDamageType(seg.reason);
+      const type = seg.damageType || "other";
       damageTypes[type] = (damageTypes[type] || 0) + 1;
     });
 
-    // Count by severity
+    // Count from citizen incidents
+    incidents.forEach((inc) => {
+      const type = inc.damageType || "other";
+      damageTypes[type] = (damageTypes[type] || 0) + 1;
+    });
+
+    // Count by severity (road segments only, incidents don't have severity)
     const severityCounts = { critical: 0, high: 0, medium: 0, low: 0 };
     segments.forEach((seg) => {
-      const severity = mapReasonToSeverity(seg.reason);
-      if (severity === 4) severityCounts.critical++;
+      const severity = seg.severity || 2;
+      if (severity >= 4) severityCounts.critical++;
       else if (severity === 3) severityCounts.high++;
       else if (severity === 2) severityCounts.medium++;
       else severityCounts.low++;
     });
 
-    // Unique provinces
+    // Unique provinces (road segments only)
     const provinces = new Set(segments.map((seg) => seg.province));
 
     return {
-      totalBlocked: segments.length,
+      totalBlocked: segments.length + incidents.length,
       provinces: provinces.size,
       flooding: damageTypes.flooding || 0,
       landslides: damageTypes.landslide || 0,
       critical: severityCounts.critical,
       high: severityCounts.high,
     };
-  }, []);
+  }, [segments, incidents]);
 
   return (
     <div className="flex h-full flex-col">
