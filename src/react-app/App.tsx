@@ -11,6 +11,7 @@ import {
   SubmitReport,
   ReportIncident,
   ReportVerified,
+  AdminReports,
 } from "@/pages";
 
 function AppContent() {
@@ -50,6 +51,14 @@ function AppContent() {
               allowedRoles={["planner", "admin", "super_admin", "stakeholder"]}
             >
               <Projects />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/reports"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+              <AdminReports />
             </ProtectedRoute>
           }
         />

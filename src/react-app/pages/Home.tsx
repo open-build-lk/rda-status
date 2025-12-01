@@ -138,15 +138,15 @@ export function Home() {
       </div>
 
       {/* Split view: Table + Map */}
-      <div className="relative flex flex-1 overflow-hidden">
+      <div className="relative flex min-h-0 flex-1 overflow-hidden">
         {/* Road table - desktop sidebar */}
-        <div className="hidden w-80 flex-shrink-0 border-r border-gray-200 dark:border-gray-700 lg:block xl:w-96">
+        <div className="hidden w-80 flex-shrink-0 border-r border-gray-200 dark:border-gray-800 lg:block xl:w-96">
           <RoadTable />
         </div>
 
         {/* Map - hidden on mobile when menu is open */}
         {!showMobileList && (
-          <div className="relative flex-1 lg:flex">
+          <div className="relative min-w-0 flex-1">
             <DisasterMap />
           </div>
         )}
