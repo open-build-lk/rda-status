@@ -11,12 +11,17 @@ interface LayoutProps {
 
 // Separate component to access sidebar context
 function SidebarContent({ children }: { children: React.ReactNode }) {
-  const { state, isMobile } = useSidebar();
+  const { state, isMobile, openMobile } = useSidebar();
   const isCollapsed = state === "collapsed";
 
   // Calculate margin based on sidebar state
   // Sidebar expanded: 16rem (256px), collapsed: 3rem (48px), mobile: 0
   const sidebarWidth = isMobile ? 0 : isCollapsed ? 48 : 256;
+
+  // Hide main content on mobile when sidebar is open (to prevent map z-index issues)
+  if (isMobile && openMobile) {
+    return null;
+  }
 
   return (
     <div
