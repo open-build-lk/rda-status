@@ -85,68 +85,72 @@ export function ReportIncident() {
 
   // Fetch location info when coordinates change
   useEffect(() => {
-    if (latitude && longitude && !province && !isLoadingLocation) {
-      // First, try to detect province from coordinates
-      const detectedProvince = findProvinceByCoords(latitude, longitude);
-      if (detectedProvince) {
-        setProvince(detectedProvince.id);
+    if (!latitude || !longitude) return;
+    if (isLoadingLocation) return;
+    // Only auto-detect if location info hasn't been set yet
+    if (province || locationName) return;
+
+    // First, try to detect province from coordinates
+    const detectedProvince = findProvinceByCoords(latitude, longitude);
+    const detectedProvinceId = detectedProvince?.id || null;
+    if (detectedProvinceId) {
+      setProvince(detectedProvinceId);
+    }
+
+    // Fetch reverse geocoding for location name
+    setIsLoadingLocation(true);
+    interface NominatimResponse {
+      address?: {
+        road?: string;
+        neighbourhood?: string;
+        suburb?: string;
+        village?: string;
+        town?: string;
+        city?: string;
+        county?: string;
+        state_district?: string;
+        state?: string;
+      };
+    }
+
+    fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=16&addressdetails=1`,
+      {
+        headers: {
+          "User-Agent": "SriLankaRoadStatus/1.0",
+          "Accept-Language": "en",
+        },
       }
+    )
+      .then((res) => res.json() as Promise<NominatimResponse>)
+      .then((data) => {
+        if (data.address) {
+          const addr = data.address;
+          // Build location name
+          const parts: string[] = [];
+          if (addr.road) parts.push(addr.road);
+          const area = addr.neighbourhood || addr.suburb || addr.village || addr.town;
+          if (area && !parts.includes(area)) parts.push(area);
+          if (parts.length > 0) {
+            setLocationName(parts.join(", "));
+          }
 
-      // Fetch reverse geocoding for location name
-      setIsLoadingLocation(true);
-      interface NominatimResponse {
-        address?: {
-          road?: string;
-          neighbourhood?: string;
-          suburb?: string;
-          village?: string;
-          town?: string;
-          city?: string;
-          county?: string;
-          state_district?: string;
-          state?: string;
-        };
-      }
-
-      fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=16&addressdetails=1`,
-        {
-          headers: {
-            "User-Agent": "SriLankaRoadStatus/1.0",
-            "Accept-Language": "en",
-          },
-        }
-      )
-        .then((res) => res.json() as Promise<NominatimResponse>)
-        .then((data) => {
-          if (data.address) {
-            const addr = data.address;
-            // Build location name
-            const parts: string[] = [];
-            if (addr.road) parts.push(addr.road);
-            const area = addr.neighbourhood || addr.suburb || addr.village || addr.town;
-            if (area && !parts.includes(area)) parts.push(area);
-            if (parts.length > 0) {
-              setLocationName(parts.join(", "));
-            }
-
-            // Try to detect district from address
-            const districtName = addr.county || addr.state_district || addr.city;
-            if (districtName && province) {
-              const districts = getDistrictsForProvince(province);
-              const matchedDistrict = districts.find(
-                (d) => d.name.toLowerCase() === districtName.toLowerCase()
-              );
-              if (matchedDistrict) {
-                setDistrict(matchedDistrict.id);
-              }
+          // Try to detect district from address (use the locally detected province, not state)
+          const districtName = addr.county || addr.state_district || addr.city;
+          if (districtName && detectedProvinceId) {
+            const districts = getDistrictsForProvince(detectedProvinceId);
+            const matchedDistrict = districts.find(
+              (d) => d.name.toLowerCase() === districtName.toLowerCase()
+            );
+            if (matchedDistrict) {
+              setDistrict(matchedDistrict.id);
             }
           }
-        })
-        .catch((err) => console.error("Reverse geocoding failed:", err))
-        .finally(() => setIsLoadingLocation(false));
-    }
-  }, [latitude, longitude]);
+        }
+      })
+      .catch((err) => console.error("Reverse geocoding failed:", err))
+      .finally(() => setIsLoadingLocation(false));
+  }, [latitude, longitude, province, locationName, isLoadingLocation, setProvince, setDistrict, setLocationName, setIsLoadingLocation]);
 
   const handlePhotoCapture = (blob: Blob, coords: { lat: number; lng: number } | null) => {
     const photo: Photo = {

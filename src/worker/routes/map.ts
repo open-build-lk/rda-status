@@ -3,7 +3,7 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { createDb } from "../db";
 import { damageReports, roadSegments } from "../db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, or } from "drizzle-orm";
 import { snapToRoads, calculateMidpoint } from "../services/roadsService";
 
 const mapRoutes = new Hono<{ Bindings: Env }>();
@@ -106,7 +106,12 @@ mapRoutes.get("/segments", async (c) => {
     })
     .from(roadSegments)
     .innerJoin(damageReports, eq(roadSegments.reportId, damageReports.id))
-    .where(eq(damageReports.status, "verified"));
+    .where(
+      or(
+        eq(damageReports.status, "verified"),
+        eq(damageReports.status, "in_progress")
+      )
+    );
 
   // Format for frontend
   const formatted = results.map((s) => {
@@ -150,7 +155,12 @@ mapRoutes.get("/segments/verified", async (c) => {
     })
     .from(roadSegments)
     .innerJoin(damageReports, eq(roadSegments.reportId, damageReports.id))
-    .where(eq(damageReports.status, "verified"));
+    .where(
+      or(
+        eq(damageReports.status, "verified"),
+        eq(damageReports.status, "in_progress")
+      )
+    );
 
   const formatted = results.map((s) => {
     const path = JSON.parse(s.snappedPath || "[]");
@@ -190,7 +200,10 @@ mapRoutes.get("/incidents", async (c) => {
     .from(damageReports)
     .where(
       and(
-        eq(damageReports.status, "verified"),
+        or(
+          eq(damageReports.status, "verified"),
+          eq(damageReports.status, "in_progress")
+        ),
         eq(damageReports.sourceType, "citizen")
       )
     )
