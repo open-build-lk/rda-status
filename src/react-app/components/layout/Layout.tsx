@@ -19,7 +19,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex h-screen w-full flex-col">
+    <div className="flex h-full w-full flex-col">
       <header className="flex h-14 shrink-0 items-center gap-2 border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950">
         <div className="flex items-center gap-2 px-4">
           <SidebarTrigger className="-ml-1" />
