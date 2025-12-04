@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, MapPin, Loader2, Navigation } from "lucide-react";
+import clsx from "clsx";
+import { AlertCircle, Check, MapPin, Loader2, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -82,6 +83,19 @@ export function ReportIncident() {
     setSubmittedReport,
     reset,
   } = useIncidentReportStore();
+  // Prefill contact info from signed-in user when available (but keep editable)
+  useEffect(() => {
+    if (!user) return;
+    if (!anonymousName.trim() && user.name) {
+      setAnonymousName(user.name);
+    }
+    if (!anonymousEmail.trim() && user.email) {
+      setAnonymousEmail(user.email);
+    }
+    if (!anonymousContact.trim() && user.phone) {
+      setAnonymousContact(user.phone);
+    }
+  }, [user, anonymousName, anonymousEmail, anonymousContact, setAnonymousName, setAnonymousEmail, setAnonymousContact]);
 
   // Fetch location info when coordinates change
   useEffect(() => {
@@ -327,28 +341,65 @@ export function ReportIncident() {
 
   // Progressive disclosure: show sections as user completes previous ones
   const hasPhotos = photos.length > 0;
+  const hasGeoPhoto = photos.some((p) => !!p.coords);
+  const hasLocation = Boolean(latitude && longitude && hasGeoPhoto);
   const hasCategory = !!damageType;
   // For signed-in users, contact info is optional. For anonymous, name + email required.
   const hasContactInfo = user
     ? true
     : (anonymousName.trim() !== "" && anonymousEmail.trim() !== "" && isValidEmail(anonymousEmail));
+  const readyForSubmit = hasPhotos && hasLocation && hasCategory && hasContactInfo;
+
+  const submitBlocker = !hasPhotos
+    ? "Add at least one photo"
+    : !hasGeoPhoto
+      ? "Retake a photo with GPS"
+      : !hasCategory
+        ? "Select an incident type"
+        : !hasContactInfo
+          ? "Add a name and valid email"
+          : null;
+
+  const alerts: { type: "error" | "warning"; text: string }[] = [];
+  if (submitError) alerts.push({ type: "error", text: submitError });
+  if (!hasPhotos) alerts.push({ type: "warning", text: "Add at least one photo to start your report." });
+  if (hasPhotos && !hasGeoPhoto) {
+    alerts.push({
+      type: "error",
+      text: "We couldn't detect location from your photo. Enable GPS and retake, or allow location access.",
+    });
+  }
 
   // Main form
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-        <div className="flex items-center gap-3 max-w-md mx-auto">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <h1 className="text-lg font-semibold">Report Incident</h1>
-        </div>
+      <div className="max-w-md mx-auto px-4 pt-6">
+        <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Report Incident</h1>
       </div>
+
+      {/* Top alerts */}
+      {alerts.length > 0 && (
+        <div className="max-w-md mx-auto px-4 pt-3 space-y-2">
+          {alerts.map((alert, idx) => (
+            <div
+              key={`${alert.type}-${idx}`}
+              className={clsx(
+                "flex items-start gap-2 rounded-lg border px-3 py-2 text-sm",
+                alert.type === "error"
+                  ? "border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200"
+                  : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-100"
+              )}
+            >
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{alert.text}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Form */}
       <div className="max-w-md mx-auto p-4 space-y-6 pb-24">
-        {/* Step 1: Photos */}
+        {/* Step 1: Photos + location */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
@@ -368,19 +419,28 @@ export function ReportIncident() {
               onRemove={removePhoto}
               onAddMore={() => setShowCamera(true)}
               maxPhotos={MAX_PHOTOS}
+              hasGeoPhoto={hasGeoPhoto}
+              locationRequired
+              onRetryLocation={() => setShowCamera(true)}
             />
 
-            {latitude && longitude && (
+            {latitude && longitude && hasGeoPhoto && (
               <div className="mt-3 flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
                 <MapPin className="w-4 h-4" />
                 Location captured
+              </div>
+            )}
+
+            {!hasGeoPhoto && hasPhotos && (
+              <div className="mt-3 text-xs text-gray-600 dark:text-gray-300">
+                We need at least one photo with GPS. Enable location for your camera, then retake.
               </div>
             )}
           </CardContent>
         </Card>
 
         {/* Step 1.5: Location Verification - shown after photos with coordinates */}
-        {hasPhotos && latitude && longitude && (
+        {hasPhotos && hasGeoPhoto && latitude && longitude && (
           <Card className="animate-in fade-in slide-in-from-bottom-4 duration-300">
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
@@ -474,152 +534,169 @@ export function ReportIncident() {
         )}
 
         {/* Step 2: Incident Details - shown after photos */}
-        {hasPhotos && (
-          <Card className="animate-in fade-in slide-in-from-bottom-4 duration-300">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <span className={`w-6 h-6 rounded-full text-sm flex items-center justify-center ${
-                  hasCategory
-                    ? "bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400"
-                    : "bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-400"
-                }`}>
-                  {hasCategory ? "✓" : "2"}
-                </span>
-                Incident Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <IncidentCategorySelect
-                value={damageType}
-                onChange={setDamageType}
+        {/* Step 2: Incident Details */}
+        <Card className="relative animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <span className={`w-6 h-6 rounded-full text-sm flex items-center justify-center ${
+                hasCategory
+                  ? "bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400"
+                  : "bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-400"
+              }`}>
+                {hasCategory ? "✓" : "2"}
+              </span>
+              Incident Details
+            </CardTitle>
+          </CardHeader>
+          <CardContent className={clsx("space-y-6", !hasLocation && "opacity-60 pointer-events-none")}>
+            <IncidentCategorySelect
+              value={damageType}
+              onChange={setDamageType}
+            />
+
+            <PassabilityScale
+              value={passabilityLevel}
+              onChange={setPassabilityLevel}
+            />
+
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                id="singleLane"
+                checked={isSingleLane}
+                onChange={(e) => setIsSingleLane(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300"
               />
+              <Label htmlFor="singleLane" className="text-sm font-normal">
+                Single lane traffic possible
+              </Label>
+            </div>
 
-              <PassabilityScale
-                value={passabilityLevel}
-                onChange={setPassabilityLevel}
+            <div className="space-y-2">
+              <Label htmlFor="blockedDistance">Blocked distance (meters)</Label>
+              <Input
+                id="blockedDistance"
+                type="number"
+                placeholder="e.g., 50"
+                value={blockedDistanceMeters || ""}
+                onChange={(e) => setBlockedDistance(e.target.value ? Number(e.target.value) : null)}
               />
+            </div>
+          </CardContent>
+          {!hasLocation && (
+            <div className="absolute inset-0 rounded-xl bg-gray-900/30 backdrop-blur-[2px] flex items-center justify-center text-sm text-gray-100">
+              Complete the photo step with GPS to edit details.
+            </div>
+          )}
+        </Card>
 
-              <div className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  id="singleLane"
-                  checked={isSingleLane}
-                  onChange={(e) => setIsSingleLane(e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-300"
-                />
-                <Label htmlFor="singleLane" className="text-sm font-normal">
-                  Single lane traffic possible
-                </Label>
+        {/* Step 3: Contact Info */}
+        <Card className="relative animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <span className={`w-6 h-6 rounded-full text-sm flex items-center justify-center ${
+                hasContactInfo
+                  ? "bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400"
+                  : "bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-400"
+              }`}>
+                {hasContactInfo ? "✓" : "3"}
+              </span>
+              Contact Info
+              {user && <span className="text-xs text-gray-500 font-normal">(optional)</span>}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className={clsx("space-y-4", (!hasLocation || !hasCategory) && "opacity-60 pointer-events-none")}>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {user
+                ? "We pre-filled your details. You can edit before submitting."
+                : "We&apos;ll send you a verification link to confirm your report."}
+            </p>
+
+            <div className="space-y-2">
+              <Label htmlFor="name">
+                Your Name {!user && <span className="text-red-500">*</span>}
+              </Label>
+              <Input
+                id="name"
+                placeholder="Enter your name"
+                value={anonymousName}
+                onChange={(e) => setAnonymousName(e.target.value)}
+                required={!user}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">
+                Email {!user && <span className="text-red-500">*</span>}
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                value={anonymousEmail}
+                onChange={(e) => setAnonymousEmail(e.target.value)}
+                required={!user}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="contact">Phone Number</Label>
+              <Input
+                id="contact"
+                type="tel"
+                placeholder="07X XXX XXXX"
+                value={anonymousContact}
+                onChange={(e) => setAnonymousContact(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">Additional Details</Label>
+              <Textarea
+                id="description"
+                placeholder="Describe the incident..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </CardContent>
+          {(!hasLocation || !hasCategory) && (
+            <div className="absolute inset-0 rounded-xl bg-gray-900/30 backdrop-blur-[2px] flex items-center justify-center text-sm text-gray-100 px-6 text-center">
+              Finish the photo and incident details steps to add your contact info.
+            </div>
+          )}
+        </Card>
+
+        {/* Step 4: Review & Submit */}
+        <Card className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <span className={`w-6 h-6 rounded-full text-sm flex items-center justify-center ${
+                readyForSubmit
+                  ? "bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400"
+                  : "bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-400"
+              }`}>
+                {readyForSubmit ? "✓" : "4"}
+              </span>
+              Review & Submit
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium text-gray-800 dark:text-gray-200">Checklist</h3>
+              <div className="space-y-1.5">
+                <ChecklistRow label="Photo with GPS" done={hasPhotos && hasGeoPhoto} />
+                <ChecklistRow label="Incident type selected" done={hasCategory} />
+                <ChecklistRow label={user ? "Contact info (optional)" : "Name and email added"} done={hasContactInfo} />
               </div>
+            </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="blockedDistance">Blocked distance (meters)</Label>
-                <Input
-                  id="blockedDistance"
-                  type="number"
-                  placeholder="e.g., 50"
-                  value={blockedDistanceMeters || ""}
-                  onChange={(e) => setBlockedDistance(e.target.value ? Number(e.target.value) : null)}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Step 3: Contact Info - shown after category selected */}
-        {hasPhotos && hasCategory && (
-          <Card className="animate-in fade-in slide-in-from-bottom-4 duration-300">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <span className={`w-6 h-6 rounded-full text-sm flex items-center justify-center ${
-                  hasContactInfo
-                    ? "bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400"
-                    : "bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-400"
-                }`}>
-                  {hasContactInfo ? "✓" : "3"}
-                </span>
-                Contact Info
-                {user && <span className="text-xs text-gray-500 font-normal">(optional)</span>}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {!user && (
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  We'll send you a verification link to confirm your report.
-                </p>
-              )}
-
-              <div className="space-y-2">
-                <Label htmlFor="name">
-                  Your Name {!user && <span className="text-red-500">*</span>}
-                </Label>
-                <Input
-                  id="name"
-                  placeholder="Enter your name"
-                  value={user?.name || anonymousName}
-                  onChange={(e) => setAnonymousName(e.target.value)}
-                  disabled={!!user}
-                  required={!user}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email">
-                  Email {!user && <span className="text-red-500">*</span>}
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={user?.email || anonymousEmail}
-                  onChange={(e) => setAnonymousEmail(e.target.value)}
-                  disabled={!!user}
-                  required={!user}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="contact">Phone Number</Label>
-                <Input
-                  id="contact"
-                  type="tel"
-                  placeholder="07X XXX XXXX"
-                  value={anonymousContact}
-                  onChange={(e) => setAnonymousContact(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="description">Additional Details</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Describe the incident..."
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={3}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Error message */}
-        {submitError && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-600 dark:text-red-400">
-            {submitError}
-          </div>
-        )}
-      </div>
-
-      {/* Fixed submit button - only show when ready */}
-      {hasPhotos && hasCategory && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 animate-in fade-in slide-in-from-bottom-2 duration-200">
-          <div className="max-w-md mx-auto">
             <Button
               className="w-full"
               size="lg"
               onClick={handleSubmit}
-              disabled={isSubmitting}
+              disabled={isSubmitting || !readyForSubmit}
             >
               {isSubmitting ? (
                 <>
@@ -630,9 +707,35 @@ export function ReportIncident() {
                 "Submit Report"
               )}
             </Button>
-          </div>
-        </div>
-      )}
+
+            {!readyForSubmit && submitBlocker && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                Complete: {submitBlocker}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function ChecklistRow({ label, done }: { label: string; done: boolean }) {
+  return (
+    <div className="flex items-center gap-2 text-sm">
+      <span
+        className={clsx(
+          "flex h-5 w-5 items-center justify-center rounded-full border",
+          done
+            ? "border-green-500 bg-green-100 text-green-600 dark:border-green-700 dark:bg-green-900/50 dark:text-green-300"
+            : "border-gray-300 text-gray-400 dark:border-gray-700 dark:text-gray-500"
+        )}
+      >
+        {done && <Check className="h-3.5 w-3.5" />}
+      </span>
+      <span className={done ? "text-gray-800 dark:text-gray-100" : "text-gray-500 dark:text-gray-400"}>
+        {label}
+      </span>
     </div>
   );
 }

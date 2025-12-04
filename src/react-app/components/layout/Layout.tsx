@@ -4,6 +4,8 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { Header } from "./Header";
 import { Footer } from "./Footer";
 import { Separator } from "@/components/ui/separator";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { useLocation, useNavigate } from "react-router-dom";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -12,6 +14,8 @@ interface LayoutProps {
 // Separate component to access sidebar context
 function SidebarContent({ children }: { children: React.ReactNode }) {
   const { state, isMobile, openMobile } = useSidebar();
+  const location = useLocation();
+  const navigate = useNavigate();
   const isCollapsed = state === "collapsed";
   // Calculate margin based on sidebar state
   // Sidebar expanded: 20rem (320px), collapsed: 3rem (48px), mobile: 0
@@ -22,6 +26,8 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
     return null;
   }
 
+  const showReportBreadcrumb = location.pathname.startsWith("/report");
+
   return (
     <div
       className="flex h-screen flex-col transition-[margin,width] duration-200 ease-linear"
@@ -31,12 +37,37 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
       }}
     >
       <header className="flex h-14 shrink-0 items-center gap-2 border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950">
-        <div className="flex items-center gap-2 px-4">
+        <div className="flex items-center gap-2 px-4 w-full">
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 h-4" />
-          <span className="text-sm font-medium text-gray-500">
-            Sri Lanka Road Status
-          </span>
+          {showReportBreadcrumb ? (
+            <Breadcrumb>
+              <BreadcrumbList className="items-center gap-2 text-sm">
+                <BreadcrumbItem>
+                  <BreadcrumbLink
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      navigate("/");
+                    }}
+                    className="text-sm font-semibold text-gray-800 dark:text-gray-100"
+                  >
+                    Sri Lanka Road Status
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage className="text-sm font-semibold text-gray-600 dark:text-gray-300">
+                    Report Incident
+                  </BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          ) : (
+            <span className="text-sm font-semibold text-gray-700 dark:text-gray-100">
+              Sri Lanka Road Status
+            </span>
+          )}
         </div>
       </header>
       <main className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">

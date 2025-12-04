@@ -12,10 +12,19 @@ import {
   LayoutDashboard,
   FolderKanban,
   Shield,
+  ArrowLeft,
 } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/auth";
 import { cn } from "@/lib/utils";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 interface NavItem {
   label: string;
@@ -63,6 +72,7 @@ export function Header() {
   const { user, isInitialized, logout } = useAuthStore();
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const handleLogout = async () => {
     setMenuOpen(false);
@@ -76,6 +86,16 @@ export function Header() {
     if (item.roles && user && !item.roles.includes(user.role)) return false;
     return true;
   });
+
+  const showReportBreadcrumb = location.pathname.startsWith("/report");
+  const handleBack = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate("/");
+    }
+  };
 
   return (
     <header className="sticky top-0 z-[99] w-full border-b border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:border-gray-800 dark:bg-gray-950/95">
@@ -147,6 +167,27 @@ export function Header() {
           )}
         </div>
       </div>
+
+      {showReportBreadcrumb && (
+        <div className="border-t border-gray-200 bg-gray-50 px-3 py-2 sm:px-4 sm:py-2.5 dark:border-gray-800 dark:bg-gray-900/80">
+          <div className="max-w-5xl">
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink href="#" onClick={handleBack} className="inline-flex items-center gap-1">
+                    <ArrowLeft className="h-4 w-4" />
+                    Back
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Report Incident</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </div>
+        </div>
+      )}
 
       {/* Mobile menu dropdown */}
       {menuOpen && (

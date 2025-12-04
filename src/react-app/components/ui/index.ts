@@ -8,6 +8,14 @@ export {
   CardDescription,
   CardContent,
 } from "./card";
+export {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "./breadcrumb";
 export { Input } from "./input";
 export { Label } from "./label";
 export { Textarea } from "./textarea";
