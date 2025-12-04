@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import clsx from "clsx";
-import { AlertCircle, Check, MapPin, Loader2, Navigation } from "lucide-react";
+import { AlertCircle, Check, MapPin, Loader2, Navigation, Building2, School, Hospital, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,8 +16,6 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CameraCapture } from "@/components/camera/CameraCapture";
 import { PhotoGallery, type Photo } from "@/components/camera/PhotoGallery";
-import { IncidentCategorySelect } from "@/components/forms/IncidentCategorySelect";
-import { PassabilityScale } from "@/components/forms/PassabilityScale";
 import { useIncidentReportStore } from "@/stores/incidentReport";
 import { useAuthStore } from "@/stores/auth";
 import {
@@ -25,6 +23,16 @@ import {
   getDistrictsForProvince,
   findProvinceByCoords,
 } from "@/data/sriLankaLocations";
+import {
+  INFRASTRUCTURE_CATEGORIES,
+  INFRASTRUCTURE_CATEGORY_LABELS,
+  DAMAGE_LEVELS,
+  DAMAGE_LEVEL_LABELS,
+  PRIORITY_LEVELS,
+  type InfrastructureCategory,
+  type DamageLevel,
+  type PriorityLevel,
+} from "../../shared/types";
 
 const MAX_PHOTOS = 5;
 
@@ -40,6 +48,25 @@ interface ReportResult {
   promptSignup: boolean;
 }
 
+const categoryIcons: Record<InfrastructureCategory, React.ReactNode> = {
+  government_building: <Building2 className="w-6 h-6" />,
+  school: <School className="w-6 h-6" />,
+  hospital: <Hospital className="w-6 h-6" />,
+  utility: <Zap className="w-6 h-6" />,
+};
+
+const damageLevelColors: Record<DamageLevel, string> = {
+  minor: "border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20",
+  major: "border-orange-500 bg-orange-50 dark:bg-orange-900/20",
+  destroyed: "border-red-500 bg-red-50 dark:bg-red-900/20",
+};
+
+const priorityColors: Record<PriorityLevel, string> = {
+  high: "border-red-500 bg-red-50 dark:bg-red-900/20",
+  medium: "border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20",
+  low: "border-green-500 bg-green-50 dark:bg-green-900/20",
+};
+
 export function ReportIncident() {
   const navigate = useNavigate();
   const [showCamera, setShowCamera] = useState(false);
@@ -53,10 +80,10 @@ export function ReportIncident() {
     district,
     locationName,
     isLoadingLocation,
-    damageType,
-    passabilityLevel,
-    isSingleLane,
-    blockedDistanceMeters,
+    infrastructureCategory,
+    facilityName,
+    damageLevel,
+    citizenPriority,
     anonymousName,
     anonymousEmail,
     anonymousContact,
@@ -70,10 +97,10 @@ export function ReportIncident() {
     setDistrict,
     setLocationName,
     setIsLoadingLocation,
-    setDamageType,
-    setPassabilityLevel,
-    setIsSingleLane,
-    setBlockedDistance,
+    setInfrastructureCategory,
+    setFacilityName,
+    setDamageLevel,
+    setCitizenPriority,
     setAnonymousName,
     setAnonymousEmail,
     setAnonymousContact,
@@ -83,7 +110,8 @@ export function ReportIncident() {
     setSubmittedReport,
     reset,
   } = useIncidentReportStore();
-  // Prefill contact info from signed-in user when available (but keep editable)
+
+  // Prefill contact info from signed-in user when available
   useEffect(() => {
     if (!user) return;
     if (!anonymousName.trim() && user.name) {
@@ -101,17 +129,14 @@ export function ReportIncident() {
   useEffect(() => {
     if (!latitude || !longitude) return;
     if (isLoadingLocation) return;
-    // Only auto-detect if location info hasn't been set yet
     if (province || locationName) return;
 
-    // First, try to detect province from coordinates
     const detectedProvince = findProvinceByCoords(latitude, longitude);
     const detectedProvinceId = detectedProvince?.id || null;
     if (detectedProvinceId) {
       setProvince(detectedProvinceId);
     }
 
-    // Fetch reverse geocoding for location name
     setIsLoadingLocation(true);
     interface NominatimResponse {
       address?: {
@@ -131,7 +156,7 @@ export function ReportIncident() {
       `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=16&addressdetails=1`,
       {
         headers: {
-          "User-Agent": "SriLankaRoadStatus/1.0",
+          "User-Agent": "InfrastructureRecovery/1.0",
           "Accept-Language": "en",
         },
       }
@@ -140,7 +165,6 @@ export function ReportIncident() {
       .then((data) => {
         if (data.address) {
           const addr = data.address;
-          // Build location name
           const parts: string[] = [];
           if (addr.road) parts.push(addr.road);
           const area = addr.neighbourhood || addr.suburb || addr.village || addr.town;
@@ -149,7 +173,6 @@ export function ReportIncident() {
             setLocationName(parts.join(", "));
           }
 
-          // Try to detect district from address (use the locally detected province, not state)
           const districtName = addr.county || addr.state_district || addr.city;
           if (districtName && detectedProvinceId) {
             const districts = getDistrictsForProvince(detectedProvinceId);
@@ -177,26 +200,27 @@ export function ReportIncident() {
     setShowCamera(false);
   };
 
-  // Email validation helper
   const isValidEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
   const handleSubmit = async () => {
-    // Validate required fields
     if (photos.length === 0) {
       setSubmitError("Please take at least one photo");
       return;
     }
-    if (!damageType) {
-      setSubmitError("Please select an incident category");
+    if (!infrastructureCategory) {
+      setSubmitError("Please select a facility type");
+      return;
+    }
+    if (!damageLevel) {
+      setSubmitError("Please select a damage level");
       return;
     }
     if (!latitude || !longitude) {
       setSubmitError("Location is required. Please take a photo with GPS enabled.");
       return;
     }
-    // For non-signed-in users, require name and email
     if (!user) {
       if (!anonymousName.trim()) {
         setSubmitError("Please enter your name");
@@ -242,14 +266,14 @@ export function ReportIncident() {
         province: province || undefined,
         district: district || undefined,
         locationName: locationName || undefined,
-        damageType,
-        passabilityLevel: passabilityLevel || undefined,
-        isSingleLane,
-        blockedDistanceMeters: blockedDistanceMeters || undefined,
+        infrastructureCategory,
+        facilityName: facilityName || undefined,
+        damageLevel,
+        citizenPriority: citizenPriority || undefined,
+        description: description || undefined,
         anonymousName: anonymousName || undefined,
         anonymousEmail: anonymousEmail || undefined,
         anonymousContact: anonymousContact || undefined,
-        description: description || undefined,
         mediaKeys,
       };
 
@@ -309,7 +333,7 @@ export function ReportIncident() {
                 </>
               ) : (
                 <p className="text-gray-600 dark:text-gray-400">
-                  Thank you for reporting this incident. Your report will be reviewed by our team.
+                  Thank you for reporting this infrastructure damage. Your report will be reviewed by officials.
                 </p>
               )}
 
@@ -339,26 +363,28 @@ export function ReportIncident() {
     );
   }
 
-  // Progressive disclosure: show sections as user completes previous ones
+  // Progressive disclosure
   const hasPhotos = photos.length > 0;
   const hasGeoPhoto = photos.some((p) => !!p.coords);
   const hasLocation = Boolean(latitude && longitude && hasGeoPhoto);
-  const hasCategory = !!damageType;
-  // For signed-in users, contact info is optional. For anonymous, name + email required.
+  const hasFacility = !!infrastructureCategory;
+  const hasDamageInfo = !!damageLevel;
   const hasContactInfo = user
     ? true
     : (anonymousName.trim() !== "" && anonymousEmail.trim() !== "" && isValidEmail(anonymousEmail));
-  const readyForSubmit = hasPhotos && hasLocation && hasCategory && hasContactInfo;
+  const readyForSubmit = hasPhotos && hasLocation && hasFacility && hasDamageInfo && hasContactInfo;
 
   const submitBlocker = !hasPhotos
     ? "Add at least one photo"
     : !hasGeoPhoto
       ? "Retake a photo with GPS"
-      : !hasCategory
-        ? "Select an incident type"
-        : !hasContactInfo
-          ? "Add a name and valid email"
-          : null;
+      : !hasFacility
+        ? "Select a facility type"
+        : !hasDamageInfo
+          ? "Select a damage level"
+          : !hasContactInfo
+            ? "Add a name and valid email"
+            : null;
 
   const alerts: { type: "error" | "warning"; text: string }[] = [];
   if (submitError) alerts.push({ type: "error", text: submitError });
@@ -370,11 +396,11 @@ export function ReportIncident() {
     });
   }
 
-  // Main form
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-md mx-auto px-4 pt-6">
-        <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Report Incident</h1>
+        <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Report Infrastructure Damage</h1>
+        <p className="text-sm text-gray-500 mt-1">Help us track damage to public facilities</p>
       </div>
 
       {/* Top alerts */}
@@ -399,7 +425,7 @@ export function ReportIncident() {
 
       {/* Form */}
       <div className="max-w-md mx-auto p-4 space-y-6 pb-24">
-        {/* Step 1: Photos + location */}
+        {/* Step 1: Photos */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
@@ -410,7 +436,7 @@ export function ReportIncident() {
               }`}>
                 {hasPhotos ? "✓" : "1"}
               </span>
-              Take Photos of the Incident
+              Take Photos of the Damage
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -439,7 +465,7 @@ export function ReportIncident() {
           </CardContent>
         </Card>
 
-        {/* Step 1.5: Location Verification - shown after photos with coordinates */}
+        {/* Step 1.5: Location Verification */}
         {hasPhotos && hasGeoPhoto && latitude && longitude && (
           <Card className="animate-in fade-in slide-in-from-bottom-4 duration-300">
             <CardHeader className="pb-3">
@@ -505,10 +531,10 @@ export function ReportIncident() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="locationName">Road / Location Name</Label>
+                <Label htmlFor="locationName">Address / Area Name</Label>
                 <Input
                   id="locationName"
-                  placeholder="e.g., Kandy Road near Town Hall"
+                  placeholder="e.g., Near Town Hall, Main Street"
                   value={locationName}
                   onChange={(e) => setLocationName(e.target.value)}
                 />
@@ -533,64 +559,161 @@ export function ReportIncident() {
           </Card>
         )}
 
-        {/* Step 2: Incident Details - shown after photos */}
-        {/* Step 2: Incident Details */}
+        {/* Step 2: Facility Details */}
         <Card className="relative animate-in fade-in slide-in-from-bottom-4 duration-300">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <span className={`w-6 h-6 rounded-full text-sm flex items-center justify-center ${
-                hasCategory
+                hasFacility
                   ? "bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400"
                   : "bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-400"
               }`}>
-                {hasCategory ? "✓" : "2"}
+                {hasFacility ? "✓" : "2"}
               </span>
-              Incident Details
+              What was Damaged?
             </CardTitle>
           </CardHeader>
           <CardContent className={clsx("space-y-6", !hasLocation && "opacity-60 pointer-events-none")}>
-            <IncidentCategorySelect
-              value={damageType}
-              onChange={setDamageType}
-            />
-
-            <PassabilityScale
-              value={passabilityLevel}
-              onChange={setPassabilityLevel}
-            />
-
-            <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                id="singleLane"
-                checked={isSingleLane}
-                onChange={(e) => setIsSingleLane(e.target.checked)}
-                className="w-4 h-4 rounded border-gray-300"
-              />
-              <Label htmlFor="singleLane" className="text-sm font-normal">
-                Single lane traffic possible
-              </Label>
+            {/* Infrastructure Category Selection */}
+            <div className="space-y-3">
+              <Label>Facility Type</Label>
+              <div className="grid grid-cols-2 gap-3">
+                {INFRASTRUCTURE_CATEGORIES.map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setInfrastructureCategory(cat)}
+                    className={clsx(
+                      "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all",
+                      infrastructureCategory === cat
+                        ? "border-primary-500 bg-primary-50 dark:bg-primary-900/20"
+                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300"
+                    )}
+                  >
+                    <div className={clsx(
+                      "p-2 rounded-full",
+                      infrastructureCategory === cat
+                        ? "bg-primary-100 dark:bg-primary-900 text-primary-600"
+                        : "bg-gray-100 dark:bg-gray-800 text-gray-600"
+                    )}>
+                      {categoryIcons[cat]}
+                    </div>
+                    <span className="text-sm font-medium text-center">
+                      {INFRASTRUCTURE_CATEGORY_LABELS[cat]}
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
 
+            {/* Facility Name */}
             <div className="space-y-2">
-              <Label htmlFor="blockedDistance">Blocked distance (meters)</Label>
+              <Label htmlFor="facilityName">Facility Name (optional)</Label>
               <Input
-                id="blockedDistance"
-                type="number"
-                placeholder="e.g., 50"
-                value={blockedDistanceMeters || ""}
-                onChange={(e) => setBlockedDistance(e.target.value ? Number(e.target.value) : null)}
+                id="facilityName"
+                placeholder="e.g., Central Hospital, Town Hall, ABC School"
+                value={facilityName}
+                onChange={(e) => setFacilityName(e.target.value)}
               />
             </div>
           </CardContent>
           {!hasLocation && (
             <div className="absolute inset-0 rounded-xl bg-gray-900/30 backdrop-blur-[2px] flex items-center justify-center text-sm text-gray-100">
-              Complete the photo step with GPS to edit details.
+              Complete the photo step with GPS first.
             </div>
           )}
         </Card>
 
-        {/* Step 3: Contact Info */}
+        {/* Step 3: Damage Details */}
+        <Card className="relative animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <span className={`w-6 h-6 rounded-full text-sm flex items-center justify-center ${
+                hasDamageInfo
+                  ? "bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400"
+                  : "bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-400"
+              }`}>
+                {hasDamageInfo ? "✓" : "3"}
+              </span>
+              Damage Details
+            </CardTitle>
+          </CardHeader>
+          <CardContent className={clsx("space-y-6", (!hasLocation || !hasFacility) && "opacity-60 pointer-events-none")}>
+            {/* Damage Level Selection */}
+            <div className="space-y-3">
+              <Label>How severe is the damage?</Label>
+              <div className="space-y-2">
+                {DAMAGE_LEVELS.map((level) => (
+                  <button
+                    key={level}
+                    type="button"
+                    onClick={() => setDamageLevel(level)}
+                    className={clsx(
+                      "w-full flex items-center gap-3 p-3 rounded-lg border-2 transition-all text-left",
+                      damageLevel === level
+                        ? damageLevelColors[level] + " border-2"
+                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300"
+                    )}
+                  >
+                    <div className={clsx(
+                      "w-4 h-4 rounded-full border-2",
+                      damageLevel === level
+                        ? level === 'minor' ? "bg-yellow-500 border-yellow-500"
+                          : level === 'major' ? "bg-orange-500 border-orange-500"
+                          : "bg-red-500 border-red-500"
+                        : "border-gray-300"
+                    )} />
+                    <div>
+                      <div className="font-medium">{DAMAGE_LEVEL_LABELS[level].label}</div>
+                      <div className="text-sm text-gray-500">{DAMAGE_LEVEL_LABELS[level].description}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Priority Selection */}
+            <div className="space-y-3">
+              <Label>How urgent is this? (your assessment)</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {PRIORITY_LEVELS.map((priority) => (
+                  <button
+                    key={priority}
+                    type="button"
+                    onClick={() => setCitizenPriority(priority)}
+                    className={clsx(
+                      "p-3 rounded-lg border-2 transition-all text-center",
+                      citizenPriority === priority
+                        ? priorityColors[priority]
+                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300"
+                    )}
+                  >
+                    <span className="font-medium capitalize">{priority}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <Label htmlFor="description">Additional Details (optional)</Label>
+              <Textarea
+                id="description"
+                placeholder="Describe the damage, any safety concerns, etc."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </CardContent>
+          {(!hasLocation || !hasFacility) && (
+            <div className="absolute inset-0 rounded-xl bg-gray-900/30 backdrop-blur-[2px] flex items-center justify-center text-sm text-gray-100 px-6 text-center">
+              Complete the previous steps first.
+            </div>
+          )}
+        </Card>
+
+        {/* Step 4: Contact Info */}
         <Card className="relative animate-in fade-in slide-in-from-bottom-4 duration-300">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
@@ -599,17 +722,17 @@ export function ReportIncident() {
                   ? "bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400"
                   : "bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-400"
               }`}>
-                {hasContactInfo ? "✓" : "3"}
+                {hasContactInfo ? "✓" : "4"}
               </span>
               Contact Info
               {user && <span className="text-xs text-gray-500 font-normal">(optional)</span>}
             </CardTitle>
           </CardHeader>
-          <CardContent className={clsx("space-y-4", (!hasLocation || !hasCategory) && "opacity-60 pointer-events-none")}>
+          <CardContent className={clsx("space-y-4", (!hasLocation || !hasFacility || !hasDamageInfo) && "opacity-60 pointer-events-none")}>
             <p className="text-sm text-gray-600 dark:text-gray-400">
               {user
                 ? "We pre-filled your details. You can edit before submitting."
-                : "We&apos;ll send you a verification link to confirm your report."}
+                : "We'll send you a verification link to confirm your report."}
             </p>
 
             <div className="space-y-2">
@@ -649,26 +772,15 @@ export function ReportIncident() {
                 onChange={(e) => setAnonymousContact(e.target.value)}
               />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Additional Details</Label>
-              <Textarea
-                id="description"
-                placeholder="Describe the incident..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-              />
-            </div>
           </CardContent>
-          {(!hasLocation || !hasCategory) && (
+          {(!hasLocation || !hasFacility || !hasDamageInfo) && (
             <div className="absolute inset-0 rounded-xl bg-gray-900/30 backdrop-blur-[2px] flex items-center justify-center text-sm text-gray-100 px-6 text-center">
-              Finish the photo and incident details steps to add your contact info.
+              Complete the previous steps first.
             </div>
           )}
         </Card>
 
-        {/* Step 4: Review & Submit */}
+        {/* Step 5: Submit */}
         <Card className="animate-in fade-in slide-in-from-bottom-4 duration-300">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
@@ -677,7 +789,7 @@ export function ReportIncident() {
                   ? "bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400"
                   : "bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-400"
               }`}>
-                {readyForSubmit ? "✓" : "4"}
+                {readyForSubmit ? "✓" : "5"}
               </span>
               Review & Submit
             </CardTitle>
@@ -687,7 +799,8 @@ export function ReportIncident() {
               <h3 className="text-sm font-medium text-gray-800 dark:text-gray-200">Checklist</h3>
               <div className="space-y-1.5">
                 <ChecklistRow label="Photo with GPS" done={hasPhotos && hasGeoPhoto} />
-                <ChecklistRow label="Incident type selected" done={hasCategory} />
+                <ChecklistRow label="Facility type selected" done={hasFacility} />
+                <ChecklistRow label="Damage level selected" done={hasDamageInfo} />
                 <ChecklistRow label={user ? "Contact info (optional)" : "Name and email added"} done={hasContactInfo} />
               </div>
             </div>

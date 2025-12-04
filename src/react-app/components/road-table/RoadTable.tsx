@@ -35,10 +35,10 @@ export function RoadTable(props: RoadTableProps = {}) {
     const groups: Record<string, ProcessedIncident[]> = {};
 
     incidents.forEach((inc) => {
-      if (!groups[inc.provinceName]) {
-        groups[inc.provinceName] = [];
+      if (!groups[inc.province]) {
+        groups[inc.province] = [];
       }
-      groups[inc.provinceName].push(inc);
+      groups[inc.province].push(inc);
     });
 
     return Object.entries(groups)
@@ -62,7 +62,7 @@ export function RoadTable(props: RoadTableProps = {}) {
           province,
           reports: reps.sort((a, b) => {
             // Sort by district first, then by report number
-            const districtCompare = a.districtName.localeCompare(b.districtName);
+            const districtCompare = a.district.localeCompare(b.district);
             if (districtCompare !== 0) return districtCompare;
             return a.reportNumber.localeCompare(b.reportNumber);
           }),
@@ -86,12 +86,12 @@ export function RoadTable(props: RoadTableProps = {}) {
       <div className="flex h-full flex-col overflow-hidden bg-white dark:bg-gray-900">
         <div className="border-b border-gray-200 px-4 py-3 dark:border-gray-700">
           <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
-            Affected Roads
+            Damage Reports
           </h2>
           <p className="text-xs text-gray-500 dark:text-gray-400">Loading...</p>
         </div>
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-gray-400 animate-pulse">Loading road data...</div>
+          <div className="text-gray-400 animate-pulse">Loading reports...</div>
         </div>
       </div>
     );
@@ -102,7 +102,7 @@ export function RoadTable(props: RoadTableProps = {}) {
       <div className="flex h-full flex-col overflow-hidden bg-white dark:bg-gray-900">
         <div className="border-b border-gray-200 px-4 py-3 dark:border-gray-700">
           <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
-            Affected Roads
+            Damage Reports
           </h2>
         </div>
         <div className="flex-1 flex items-center justify-center p-4">
@@ -117,10 +117,10 @@ export function RoadTable(props: RoadTableProps = {}) {
       {/* Header */}
       <div className="border-b border-gray-200 px-4 py-3 dark:border-gray-700">
         <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
-          Affected Roads
+          Damage Reports
         </h2>
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          {incidents.length} citizen reports in {provinceGroups.length} provinces
+          {incidents.length} reports in {provinceGroups.length} provinces
         </p>
       </div>
 
@@ -186,10 +186,10 @@ export function RoadTable(props: RoadTableProps = {}) {
                         {/* Report info */}
                         <div className="min-w-0 flex-1">
                           <span className="text-sm font-medium text-gray-900 dark:text-white">
-                            {report.roadLocation || report.districtName}
+                            {report.facilityName}
                           </span>
                           <p className="truncate text-xs text-gray-500 dark:text-gray-400">
-                            {report.districtName} • {report.reportNumber}
+                            {report.district} • {report.infrastructureCategory?.replace("_", " ")}
                           </p>
                         </div>
                       </button>

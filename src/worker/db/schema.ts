@@ -75,29 +75,25 @@ export const damageReports = sqliteTable(
     provinceId: text("province_id").references(() => locations.id),
     districtId: text("district_id").references(() => locations.id),
     cityId: text("city_id").references(() => locations.id),
+    // Simple province/district text for citizen reports (not FK)
+    province: text("province"),
+    district: text("district"),
     landmark: text("landmark"),
     locationName: text("location_name"), // Reverse-geocoded address/area name
-    // Asset info
-    assetType: text("asset_type").notNull(), // road, bridge, culvert, rail_track, etc.
-    assetId: text("asset_id"),
+    // Infrastructure info (NEW - replacing road-specific fields)
+    infrastructureCategory: text("infrastructure_category"), // government_building, school, hospital, utility
+    facilityName: text("facility_name"), // Name of the building/facility
     // Damage details
     damageObservedAt: integer("damage_observed_at", { mode: "timestamp" }),
-    damageType: text("damage_type").notNull(),
-    severity: integer("severity").notNull(), // 1-4
-    description: text("description").notNull(),
-    // Impact
-    operationalImpact: text("operational_impact"),
-    routeCategory: text("route_category"),
-    estimatedPopulation: integer("estimated_population"),
-    estimatedEconomicLoss: real("estimated_economic_loss"),
-    // Status and priority
+    damageType: text("damage_type"), // roof_damage, wall_collapse, etc.
+    damageLevel: text("damage_level"), // minor, major, destroyed
+    description: text("description"),
+    // Priority (dual system: citizen + admin)
+    citizenPriority: text("citizen_priority"), // high, medium, low - set by citizen
+    adminPriority: text("admin_priority"), // high, medium, low - set by admin
+    // Status
     status: text("status").notNull().default("new"),
-    priorityScore: real("priority_score"),
-    priorityVersion: text("priority_version"),
-    // Citizen report fields
-    passabilityLevel: text("passability_level"), // unpassable, foot, bike, 3wheeler, car, bus, truck
-    isSingleLane: integer("is_single_lane", { mode: "boolean" }).default(false),
-    blockedDistanceMeters: real("blocked_distance_meters"),
+    // Submission tracking
     submissionSource: text("submission_source"), // citizen_web, citizen_mobile, official
     isVerifiedSubmitter: integer("is_verified_submitter", { mode: "boolean" }).default(false),
     claimToken: text("claim_token"), // For anonymous users to claim reports later
@@ -107,11 +103,11 @@ export const damageReports = sqliteTable(
   },
   (table) => [
     index("reports_status_idx").on(table.status),
-    index("reports_severity_idx").on(table.severity),
+    index("reports_category_idx").on(table.infrastructureCategory),
+    index("reports_damage_level_idx").on(table.damageLevel),
+    index("reports_admin_priority_idx").on(table.adminPriority),
     index("reports_province_idx").on(table.provinceId),
     index("reports_district_idx").on(table.districtId),
-    index("reports_asset_type_idx").on(table.assetType),
-    index("reports_priority_idx").on(table.priorityScore),
     index("reports_location_idx").on(table.latitude, table.longitude),
     index("reports_claim_token_idx").on(table.claimToken),
   ]

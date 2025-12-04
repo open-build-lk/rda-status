@@ -99,7 +99,7 @@ mapRoutes.get("/segments", async (c) => {
       fromKm: roadSegments.fromKm,
       toKm: roadSegments.toKm,
       damageType: damageReports.damageType,
-      severity: damageReports.severity,
+      damageLevel: damageReports.damageLevel,
       description: damageReports.description,
       status: damageReports.status,
       reportedAt: damageReports.createdAt,
@@ -128,7 +128,7 @@ mapRoutes.get("/segments", async (c) => {
       path,
       midpoint: calculateMidpoint(path),
       damageType: s.damageType,
-      severity: s.severity,
+      damageLevel: s.damageLevel,
       description: s.description,
       status: s.status,
       reportedAt: s.reportedAt,
@@ -149,7 +149,7 @@ mapRoutes.get("/segments/verified", async (c) => {
       snappedPath: roadSegments.snappedPath,
       roadName: roadSegments.roadName,
       damageType: damageReports.damageType,
-      severity: damageReports.severity,
+      damageLevel: damageReports.damageLevel,
       description: damageReports.description,
       reportedAt: damageReports.createdAt,
     })
@@ -173,7 +173,7 @@ mapRoutes.get("/segments/verified", async (c) => {
         midpoint: calculateMidpoint(path),
       },
       damageType: s.damageType,
-      severity: s.severity,
+      damageLevel: s.damageLevel,
       description: s.description,
       reportedAt: s.reportedAt,
     };
@@ -182,22 +182,25 @@ mapRoutes.get("/segments/verified", async (c) => {
   return c.json(formatted);
 });
 
-// GET /api/v1/map/incidents - Get approved citizen incident reports for map display
+// GET /api/v1/map/incidents - Get verified infrastructure damage reports for map display
 mapRoutes.get("/incidents", async (c) => {
   const db = createDb(c.env.DB);
 
   const reports = await db
     .select({
       id: damageReports.id,
+      reportNumber: damageReports.reportNumber,
       latitude: damageReports.latitude,
       longitude: damageReports.longitude,
+      province: damageReports.province,
+      district: damageReports.district,
       locationName: damageReports.locationName,
+      infrastructureCategory: damageReports.infrastructureCategory,
+      facilityName: damageReports.facilityName,
       damageType: damageReports.damageType,
-      passabilityLevel: damageReports.passabilityLevel,
-      isSingleLane: damageReports.isSingleLane,
+      damageLevel: damageReports.damageLevel,
       description: damageReports.description,
       createdAt: damageReports.createdAt,
-      reportNumber: damageReports.reportNumber,
     })
     .from(damageReports)
     .where(
@@ -211,35 +214,7 @@ mapRoutes.get("/incidents", async (c) => {
     )
     .orderBy(desc(damageReports.createdAt));
 
-  // Parse locationName to extract province and district
-  const reportsWithLocation = reports.map(report => {
-    let districtName = null;
-    let provinceName = null;
-    let roadLocation = report.locationName;
-
-    // Format is typically: "Road Name (district, province)" or "(district, province)"
-    if (report.locationName) {
-      const match = report.locationName.match(/\(([^,]+),\s*([^)]+)\)/);
-      if (match) {
-        districtName = match[1].trim();
-        provinceName = match[2].trim();
-        // Extract road/location name (part before the parentheses)
-        const roadMatch = report.locationName.match(/^([^(]+)/);
-        if (roadMatch && roadMatch[1].trim()) {
-          roadLocation = roadMatch[1].trim();
-        }
-      }
-    }
-
-    return {
-      ...report,
-      districtName,
-      provinceName,
-      roadLocation,
-    };
-  });
-
-  return c.json(reportsWithLocation);
+  return c.json(reports);
 });
 
 export { mapRoutes };

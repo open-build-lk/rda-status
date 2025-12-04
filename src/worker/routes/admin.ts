@@ -2,9 +2,8 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { createDb } from "../db";
-import { damageReports, roadSegments, mediaAttachments, user, userInvitations, locations } from "../db/schema";
+import { damageReports, roadSegments, mediaAttachments, user, userInvitations } from "../db/schema";
 import { eq, desc } from "drizzle-orm";
-import { alias } from "drizzle-orm/sqlite-core";
 import { sendEmail, getInvitationEmailHtml } from "../services/email";
 import { getAuth } from "../middleware/auth";
 import {
@@ -58,7 +57,7 @@ adminRoutes.post("/import-segments", requireRole("admin", "super_admin"), async 
 
   for (const seg of data) {
     try {
-      // Create damage report
+      // Create damage report (legacy road segment import)
       await db.insert(damageReports).values({
         id: seg.reportId,
         reportNumber: `IMPORT-${seg.id}`,
@@ -66,9 +65,7 @@ adminRoutes.post("/import-segments", requireRole("admin", "super_admin"), async 
         sourceChannel: "bulk_upload",
         latitude: seg.startLat,
         longitude: seg.startLng,
-        assetType: "road",
         damageType: seg.damageType,
-        severity: seg.severity,
         description: seg.reason,
         status: "verified",
         createdAt: now,
@@ -121,22 +118,23 @@ adminRoutes.get("/segments-count", requireRole("admin", "super_admin"), async (c
 adminRoutes.get("/reports", requireRole("field_officer", "planner", "admin", "super_admin"), async (c) => {
   const db = createDb(c.env.DB);
 
-  // Create aliases for joining locations table twice
-  const provinceLocation = alias(locations, "province_location");
-  const districtLocation = alias(locations, "district_location");
-
-  const rawReports = await db
+  const reports = await db
     .select({
       id: damageReports.id,
       reportNumber: damageReports.reportNumber,
+      infrastructureCategory: damageReports.infrastructureCategory,
+      facilityName: damageReports.facilityName,
       damageType: damageReports.damageType,
-      severity: damageReports.severity,
+      damageLevel: damageReports.damageLevel,
+      citizenPriority: damageReports.citizenPriority,
+      adminPriority: damageReports.adminPriority,
       status: damageReports.status,
       latitude: damageReports.latitude,
       longitude: damageReports.longitude,
+      province: damageReports.province,
+      district: damageReports.district,
       locationName: damageReports.locationName,
       description: damageReports.description,
-      passabilityLevel: damageReports.passabilityLevel,
       anonymousName: damageReports.anonymousName,
       anonymousEmail: damageReports.anonymousEmail,
       anonymousContact: damageReports.anonymousContact,
@@ -144,44 +142,9 @@ adminRoutes.get("/reports", requireRole("field_officer", "planner", "admin", "su
       sourceType: damageReports.sourceType,
       createdAt: damageReports.createdAt,
       updatedAt: damageReports.updatedAt,
-      provinceId: damageReports.provinceId,
-      districtId: damageReports.districtId,
-      provinceName: provinceLocation.nameEn,
-      districtName: districtLocation.nameEn,
     })
     .from(damageReports)
-    .leftJoin(provinceLocation, eq(damageReports.provinceId, provinceLocation.id))
-    .leftJoin(districtLocation, eq(damageReports.districtId, districtLocation.id))
     .orderBy(desc(damageReports.createdAt));
-
-  // Parse locationName to extract district and province if not already populated
-  const reports = rawReports.map(report => {
-    let districtName = report.districtName;
-    let provinceName = report.provinceName;
-    let roadLocation = report.locationName;
-
-    // If district/province not populated but locationName exists, parse it
-    // Format is typically: "Road Name (district, province)" or "(district, province)"
-    if ((!districtName || !provinceName) && report.locationName) {
-      const match = report.locationName.match(/\(([^,]+),\s*([^)]+)\)/);
-      if (match) {
-        districtName = districtName || match[1].trim();
-        provinceName = provinceName || match[2].trim();
-        // Extract road/location name (part before the parentheses)
-        const roadMatch = report.locationName.match(/^([^(]+)/);
-        if (roadMatch) {
-          roadLocation = roadMatch[1].trim() || report.locationName;
-        }
-      }
-    }
-
-    return {
-      ...report,
-      districtName: districtName || null,
-      provinceName: provinceName || null,
-      roadLocation: roadLocation || null,
-    };
-  });
 
   return c.json(reports);
 });
@@ -217,20 +180,28 @@ const updateStatusSchema = z.object({
 // Update report schema (all editable fields)
 const updateReportSchema = z.object({
   status: z.enum(["new", "verified", "in_progress", "resolved", "rejected"]).optional(),
+  infrastructureCategory: z.enum([
+    "government_building",
+    "school",
+    "hospital",
+    "utility",
+  ]).optional(),
+  facilityName: z.string().nullable().optional(),
   damageType: z.enum([
-    "tree_fall",
-    "bridge_collapse",
-    "landslide",
-    "flooding",
-    "road_breakage",
-    "washout",
-    "collapse",
-    "blockage",
+    "roof_damage",
+    "wall_collapse",
+    "foundation_crack",
+    "flooding_damage",
+    "structural_crack",
+    "complete_collapse",
+    "fire_damage",
+    "water_damage",
     "other",
   ]).optional(),
-  severity: z.number().min(1).max(5).optional(),
+  damageLevel: z.enum(["minor", "major", "destroyed"]).optional(),
+  citizenPriority: z.enum(["high", "medium", "low"]).optional(),
+  adminPriority: z.enum(["high", "medium", "low"]).nullable().optional(),
   description: z.string().optional(),
-  passabilityLevel: z.string().nullable().optional(),
   anonymousName: z.string().nullable().optional(),
   anonymousEmail: z.string().nullable().optional(),
   anonymousContact: z.string().nullable().optional(),
@@ -289,10 +260,13 @@ adminRoutes.patch(
     // Build update object with only provided fields
     const updateData: Record<string, unknown> = { updatedAt: new Date() };
     if (updates.status !== undefined) updateData.status = updates.status;
+    if (updates.infrastructureCategory !== undefined) updateData.infrastructureCategory = updates.infrastructureCategory;
+    if (updates.facilityName !== undefined) updateData.facilityName = updates.facilityName;
     if (updates.damageType !== undefined) updateData.damageType = updates.damageType;
-    if (updates.severity !== undefined) updateData.severity = updates.severity;
+    if (updates.damageLevel !== undefined) updateData.damageLevel = updates.damageLevel;
+    if (updates.citizenPriority !== undefined) updateData.citizenPriority = updates.citizenPriority;
+    if (updates.adminPriority !== undefined) updateData.adminPriority = updates.adminPriority;
     if (updates.description !== undefined) updateData.description = updates.description;
-    if (updates.passabilityLevel !== undefined) updateData.passabilityLevel = updates.passabilityLevel;
     if (updates.anonymousName !== undefined) updateData.anonymousName = updates.anonymousName;
     if (updates.anonymousEmail !== undefined) updateData.anonymousEmail = updates.anonymousEmail;
     if (updates.anonymousContact !== undefined) updateData.anonymousContact = updates.anonymousContact;

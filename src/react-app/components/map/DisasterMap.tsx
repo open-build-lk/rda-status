@@ -239,18 +239,26 @@ export function DisasterMap() {
               <div className="min-w-48">
                 <div className="mb-2 flex items-center gap-2">
                   <span className="rounded bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">
-                    Citizen Report
+                    {incident.infrastructureCategory?.replace("_", " ") || "Infrastructure"}
+                  </span>
+                  <span className={`rounded px-2 py-0.5 text-xs font-medium ${
+                    incident.damageLevel === "destroyed" ? "bg-red-100 text-red-700" :
+                    incident.damageLevel === "major" ? "bg-orange-100 text-orange-700" :
+                    "bg-yellow-100 text-yellow-700"
+                  }`}>
+                    {incident.damageLevel}
                   </span>
                 </div>
-                <h3 className="mb-1 text-base font-bold capitalize">
-                  {incident.damageType.replace("_", " ")}
+                <h3 className="mb-1 text-base font-bold">
+                  {incident.facilityName}
                 </h3>
-                <p className="mb-1 text-sm">
-                  <span className="font-medium">Passability:</span>{" "}
-                  {incident.passabilityLevel.replace("_", " ")}
-                  {incident.isSingleLane && " (Single lane)"}
+                <p className="mb-1 text-sm text-gray-600">
+                  {incident.damageType?.replace("_", " ")}
                 </p>
                 <p className="mb-2 text-sm">{incident.description}</p>
+                <p className="text-xs text-gray-500">
+                  {incident.district}, {incident.province}
+                </p>
                 <p className="text-xs text-gray-500">
                   Reported: {new Date(incident.createdAt).toLocaleDateString()}
                 </p>

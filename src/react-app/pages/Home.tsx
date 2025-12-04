@@ -1,61 +1,55 @@
 import { useMemo, useState } from "react";
 import {
-  AlertTriangle,
-  MapPin,
-  Mountain,
-  Droplets,
+  Building2,
+  School,
+  Stethoscope,
+  Zap,
   List,
   X,
 } from "lucide-react";
 import { DisasterMap } from "@/components/map";
 import { RoadTable } from "@/components/road-table";
-import { useRoadSegments } from "@/hooks/useRoadSegments";
 import { useCitizenIncidents } from "@/hooks/useCitizenIncidents";
 
 export function Home() {
   const [showMobileList, setShowMobileList] = useState(false);
-  const { segments } = useRoadSegments();
   const { incidents } = useCitizenIncidents();
 
-  // Compute stats from fetched road segments + citizen incidents
+  // Compute stats from infrastructure damage reports
   const stats = useMemo(() => {
-    // Count by damage type from both sources
-    const damageTypes: Record<string, number> = {};
+    // Count by infrastructure category
+    const categories: Record<string, number> = {
+      government_building: 0,
+      school: 0,
+      hospital: 0,
+      utility: 0,
+    };
 
-    // Count from road segments
-    segments.forEach((seg) => {
-      const type = seg.damageType || "other";
-      damageTypes[type] = (damageTypes[type] || 0) + 1;
-    });
+    // Count by damage level
+    const damageLevels: Record<string, number> = {
+      minor: 0,
+      major: 0,
+      destroyed: 0,
+    };
 
-    // Count from citizen incidents
     incidents.forEach((inc) => {
-      const type = inc.damageType || "other";
-      damageTypes[type] = (damageTypes[type] || 0) + 1;
-    });
+      const category = inc.infrastructureCategory || "other";
+      categories[category] = (categories[category] || 0) + 1;
 
-    // Count by severity (road segments only, incidents don't have severity)
-    const severityCounts = { critical: 0, high: 0, medium: 0, low: 0 };
-    segments.forEach((seg) => {
-      const severity = seg.severity || 2;
-      if (severity >= 4) severityCounts.critical++;
-      else if (severity === 3) severityCounts.high++;
-      else if (severity === 2) severityCounts.medium++;
-      else severityCounts.low++;
+      const level = inc.damageLevel || "minor";
+      damageLevels[level] = (damageLevels[level] || 0) + 1;
     });
-
-    // Unique provinces (road segments only)
-    const provinces = new Set(segments.map((seg) => seg.province));
 
     return {
-      totalBlocked: segments.length + incidents.length,
-      provinces: provinces.size,
-      flooding: damageTypes.flooding || 0,
-      landslides: damageTypes.landslide || 0,
-      critical: severityCounts.critical,
-      high: severityCounts.high,
+      total: incidents.length,
+      government: categories.government_building,
+      schools: categories.school,
+      hospitals: categories.hospital,
+      utilities: categories.utility,
+      destroyed: damageLevels.destroyed,
+      major: damageLevels.major,
     };
-  }, [segments, incidents]);
+  }, [incidents]);
 
   return (
     <div className="flex h-full max-h-full flex-col overflow-hidden">
@@ -63,62 +57,62 @@ export function Home() {
       <div className="flex-shrink-0 border-b border-gray-200 bg-gray-50 px-2 py-2 dark:border-gray-800 dark:bg-gray-900 sm:px-4 sm:py-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 overflow-x-auto sm:gap-4">
-            {/* Total blocked */}
-            <div className="flex items-center gap-1 sm:gap-2">
-              <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/30 sm:h-10 sm:w-10">
-                <AlertTriangle className="h-3.5 w-3.5 text-red-600 dark:text-red-400 sm:h-5 sm:w-5" />
-              </div>
-              <div>
-                <p className="text-base font-bold text-gray-900 dark:text-white sm:text-2xl">
-                  {stats.totalBlocked}
-                </p>
-                <p className="whitespace-nowrap text-[9px] text-gray-500 dark:text-gray-400 sm:text-xs">
-                  Roads Affected
-                </p>
-              </div>
-            </div>
-
-            {/* Provinces */}
+            {/* Total Reports */}
             <div className="flex items-center gap-1 sm:gap-2">
               <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30 sm:h-10 sm:w-10">
-                <MapPin className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400 sm:h-5 sm:w-5" />
+                <Building2 className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400 sm:h-5 sm:w-5" />
               </div>
               <div>
                 <p className="text-base font-bold text-gray-900 dark:text-white sm:text-2xl">
-                  {stats.provinces}
+                  {stats.total}
                 </p>
                 <p className="whitespace-nowrap text-[9px] text-gray-500 dark:text-gray-400 sm:text-xs">
-                  Provinces
+                  Total Reports
                 </p>
               </div>
             </div>
 
-            {/* Flooding */}
-            <div className="flex items-center gap-1 sm:gap-2">
-              <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-cyan-100 dark:bg-cyan-900/30 sm:h-10 sm:w-10">
-                <Droplets className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400 sm:h-5 sm:w-5" />
-              </div>
-              <div>
-                <p className="text-base font-bold text-gray-900 dark:text-white sm:text-2xl">
-                  {stats.flooding}
-                </p>
-                <p className="whitespace-nowrap text-[9px] text-gray-500 dark:text-gray-400 sm:text-xs">
-                  Flooding
-                </p>
-              </div>
-            </div>
-
-            {/* Landslides */}
+            {/* Schools */}
             <div className="flex items-center gap-1 sm:gap-2">
               <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/30 sm:h-10 sm:w-10">
-                <Mountain className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 sm:h-5 sm:w-5" />
+                <School className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 sm:h-5 sm:w-5" />
               </div>
               <div>
                 <p className="text-base font-bold text-gray-900 dark:text-white sm:text-2xl">
-                  {stats.landslides}
+                  {stats.schools}
                 </p>
                 <p className="whitespace-nowrap text-[9px] text-gray-500 dark:text-gray-400 sm:text-xs">
-                  Landslides
+                  Schools
+                </p>
+              </div>
+            </div>
+
+            {/* Hospitals */}
+            <div className="flex items-center gap-1 sm:gap-2">
+              <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-rose-100 dark:bg-rose-900/30 sm:h-10 sm:w-10">
+                <Stethoscope className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400 sm:h-5 sm:w-5" />
+              </div>
+              <div>
+                <p className="text-base font-bold text-gray-900 dark:text-white sm:text-2xl">
+                  {stats.hospitals}
+                </p>
+                <p className="whitespace-nowrap text-[9px] text-gray-500 dark:text-gray-400 sm:text-xs">
+                  Hospitals
+                </p>
+              </div>
+            </div>
+
+            {/* Utilities */}
+            <div className="flex items-center gap-1 sm:gap-2">
+              <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-yellow-100 dark:bg-yellow-900/30 sm:h-10 sm:w-10">
+                <Zap className="h-3.5 w-3.5 text-yellow-600 dark:text-yellow-400 sm:h-5 sm:w-5" />
+              </div>
+              <div>
+                <p className="text-base font-bold text-gray-900 dark:text-white sm:text-2xl">
+                  {stats.utilities}
+                </p>
+                <p className="whitespace-nowrap text-[9px] text-gray-500 dark:text-gray-400 sm:text-xs">
+                  Utilities
                 </p>
               </div>
             </div>

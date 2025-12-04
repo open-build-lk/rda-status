@@ -134,33 +134,37 @@ const createReportSchema = z.object({
   // Required
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
+  infrastructureCategory: z.enum([
+    "government_building",
+    "school",
+    "hospital",
+    "utility",
+  ]),
+  facilityName: z.string().min(1).max(200),
   damageType: z.enum([
-    "tree_fall",
-    "bridge_collapse",
-    "landslide",
-    "flooding",
-    "road_breakage",
-    "washout",
-    "collapse",
-    "blockage",
+    "roof_damage",
+    "wall_collapse",
+    "foundation_crack",
+    "flooding_damage",
+    "structural_crack",
+    "complete_collapse",
+    "fire_damage",
+    "water_damage",
     "other",
   ]),
+  damageLevel: z.enum(["minor", "major", "destroyed"]),
+  citizenPriority: z.enum(["high", "medium", "low"]),
 
   // Location info (optional - user-provided or auto-detected)
   province: z.string().max(50).optional(),
   district: z.string().max(50).optional(),
-  locationName: z.string().max(200).optional(), // Road/location name
+  locationName: z.string().max(200).optional(),
 
   // Optional
   anonymousName: z.string().max(100).optional(),
   anonymousEmail: z.string().email().optional(),
   anonymousContact: z.string().max(50).optional(),
-  description: z.string().max(1000).optional(),
-  passabilityLevel: z
-    .enum(["unpassable", "foot", "bike", "3wheeler", "car", "bus", "truck"])
-    .optional(),
-  isSingleLane: z.boolean().optional(),
-  blockedDistanceMeters: z.number().min(0).max(10000).optional(),
+  description: z.string().max(2000).optional(),
   mediaKeys: z.array(z.string()).max(5).optional(), // R2 storage keys for uploaded photos
 });
 
@@ -210,22 +214,16 @@ reportsRoutes.post(
       sourceChannel: "mobile_web",
       latitude: data.latitude,
       longitude: data.longitude,
-      // Store province/district info in locationName if provided
-      locationName: locationName
-        ? (data.province && data.district
-            ? `${locationName} (${data.district}, ${data.province})`
-            : data.province
-            ? `${locationName} (${data.province})`
-            : locationName)
-        : null,
-      assetType: "road",
+      province: data.province || null,
+      district: data.district || null,
+      locationName: locationName || null,
+      infrastructureCategory: data.infrastructureCategory,
+      facilityName: data.facilityName,
       damageType: data.damageType,
-      severity: 2, // Default medium severity for citizen reports
-      description: data.description || `Citizen report: ${data.damageType}`,
+      damageLevel: data.damageLevel,
+      citizenPriority: data.citizenPriority,
+      description: data.description || null,
       status: "new",
-      passabilityLevel: data.passabilityLevel || "unpassable",
-      isSingleLane: data.isSingleLane || false,
-      blockedDistanceMeters: data.blockedDistanceMeters || null,
       submissionSource: "citizen_mobile",
       isVerifiedSubmitter: !!auth,
       claimToken,
@@ -283,12 +281,16 @@ reportsRoutes.get("/", authMiddleware(), async (c) => {
     .select({
       id: damageReports.id,
       reportNumber: damageReports.reportNumber,
+      infrastructureCategory: damageReports.infrastructureCategory,
+      facilityName: damageReports.facilityName,
       damageType: damageReports.damageType,
+      damageLevel: damageReports.damageLevel,
+      citizenPriority: damageReports.citizenPriority,
       status: damageReports.status,
       latitude: damageReports.latitude,
       longitude: damageReports.longitude,
+      locationName: damageReports.locationName,
       description: damageReports.description,
-      passabilityLevel: damageReports.passabilityLevel,
       createdAt: damageReports.createdAt,
     })
     .from(damageReports)
@@ -302,16 +304,18 @@ reportsRoutes.get("/", authMiddleware(), async (c) => {
 reportsRoutes.get("/area", async (c) => {
   const db = createDb(c.env.DB);
 
-  // Get approved citizen reports
+  // Get verified citizen reports
   const reports = await db
     .select({
       id: damageReports.id,
+      infrastructureCategory: damageReports.infrastructureCategory,
+      facilityName: damageReports.facilityName,
       damageType: damageReports.damageType,
+      damageLevel: damageReports.damageLevel,
       latitude: damageReports.latitude,
       longitude: damageReports.longitude,
+      locationName: damageReports.locationName,
       description: damageReports.description,
-      passabilityLevel: damageReports.passabilityLevel,
-      isSingleLane: damageReports.isSingleLane,
       createdAt: damageReports.createdAt,
     })
     .from(damageReports)

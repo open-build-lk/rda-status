@@ -119,7 +119,7 @@ export function Header() {
           <Link to="/" className="flex items-center gap-1.5 sm:gap-2">
             <MapPin className="h-5 w-5 text-primary-600 sm:h-6 sm:w-6" />
             <span className="text-sm font-semibold sm:text-base">
-              Sri Lanka Road Status
+              Infrastructure Recovery
             </span>
           </Link>
         </div>

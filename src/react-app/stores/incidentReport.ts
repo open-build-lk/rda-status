@@ -1,26 +1,18 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Photo } from "@/components/camera/PhotoGallery";
+import type { InfrastructureCategory, DamageLevel, PriorityLevel } from "../../shared/types";
 
 type DamageType =
-  | "tree_fall"
-  | "bridge_collapse"
-  | "landslide"
-  | "flooding"
-  | "road_breakage"
-  | "washout"
-  | "collapse"
-  | "blockage"
+  | "roof_damage"
+  | "wall_collapse"
+  | "foundation_crack"
+  | "flooding_damage"
+  | "structural_crack"
+  | "complete_collapse"
+  | "fire_damage"
+  | "water_damage"
   | "other";
-
-type PassabilityLevel =
-  | "unpassable"
-  | "foot"
-  | "bike"
-  | "3wheeler"
-  | "car"
-  | "bus"
-  | "truck";
 
 interface IncidentReportState {
   // Step 1: Photos
@@ -34,17 +26,20 @@ interface IncidentReportState {
   locationName: string;
   isLoadingLocation: boolean;
 
-  // Step 2: Incident Details
-  damageType: DamageType | null;
-  passabilityLevel: PassabilityLevel | null;
-  isSingleLane: boolean;
-  blockedDistanceMeters: number | null;
+  // Step 2: Facility Details
+  infrastructureCategory: InfrastructureCategory | null;
+  facilityName: string;
 
-  // Step 3: Contact Info
+  // Step 3: Damage Details
+  damageType: DamageType | null;
+  damageLevel: DamageLevel | null;
+  citizenPriority: PriorityLevel | null;
+  description: string;
+
+  // Step 4: Contact Info
   anonymousName: string;
   anonymousEmail: string;
   anonymousContact: string;
-  description: string;
 
   // Submission state
   isSubmitting: boolean;
@@ -66,15 +61,20 @@ interface IncidentReportActions {
   setLocationName: (name: string) => void;
   setIsLoadingLocation: (loading: boolean) => void;
 
-  // Form field actions
-  setDamageType: (type: DamageType) => void;
-  setPassabilityLevel: (level: PassabilityLevel | null) => void;
-  setIsSingleLane: (value: boolean) => void;
-  setBlockedDistance: (meters: number | null) => void;
+  // Facility actions
+  setInfrastructureCategory: (category: InfrastructureCategory | null) => void;
+  setFacilityName: (name: string) => void;
+
+  // Damage actions
+  setDamageType: (type: DamageType | null) => void;
+  setDamageLevel: (level: DamageLevel | null) => void;
+  setCitizenPriority: (priority: PriorityLevel | null) => void;
+  setDescription: (desc: string) => void;
+
+  // Contact actions
   setAnonymousName: (name: string) => void;
   setAnonymousEmail: (email: string) => void;
   setAnonymousContact: (contact: string) => void;
-  setDescription: (desc: string) => void;
 
   // Submission actions
   setSubmitting: (isSubmitting: boolean) => void;
@@ -93,14 +93,15 @@ const initialState: IncidentReportState = {
   district: null,
   locationName: "",
   isLoadingLocation: false,
+  infrastructureCategory: null,
+  facilityName: "",
   damageType: null,
-  passabilityLevel: null,
-  isSingleLane: false,
-  blockedDistanceMeters: null,
+  damageLevel: null,
+  citizenPriority: null,
+  description: "",
   anonymousName: "",
   anonymousEmail: "",
   anonymousContact: "",
-  description: "",
   isSubmitting: false,
   submitError: null,
   submittedReportId: null,
@@ -169,20 +170,28 @@ export const useIncidentReportStore = create<IncidentReportState & IncidentRepor
         set({ isLoadingLocation: loading });
       },
 
-      setDamageType: (type: DamageType) => {
+      setInfrastructureCategory: (category: InfrastructureCategory | null) => {
+        set({ infrastructureCategory: category });
+      },
+
+      setFacilityName: (name: string) => {
+        set({ facilityName: name });
+      },
+
+      setDamageType: (type: DamageType | null) => {
         set({ damageType: type });
       },
 
-      setPassabilityLevel: (level: PassabilityLevel | null) => {
-        set({ passabilityLevel: level });
+      setDamageLevel: (level: DamageLevel | null) => {
+        set({ damageLevel: level });
       },
 
-      setIsSingleLane: (value: boolean) => {
-        set({ isSingleLane: value });
+      setCitizenPriority: (priority: PriorityLevel | null) => {
+        set({ citizenPriority: priority });
       },
 
-      setBlockedDistance: (meters: number | null) => {
-        set({ blockedDistanceMeters: meters });
+      setDescription: (desc: string) => {
+        set({ description: desc });
       },
 
       setAnonymousName: (name: string) => {
@@ -195,10 +204,6 @@ export const useIncidentReportStore = create<IncidentReportState & IncidentRepor
 
       setAnonymousContact: (contact: string) => {
         set({ anonymousContact: contact });
-      },
-
-      setDescription: (desc: string) => {
-        set({ description: desc });
       },
 
       setSubmitting: (isSubmitting: boolean) => {
@@ -228,14 +233,15 @@ export const useIncidentReportStore = create<IncidentReportState & IncidentRepor
       name: "incident-report-draft",
       // Only persist certain fields, not photos (blobs can't be serialized)
       partialize: (state) => ({
+        infrastructureCategory: state.infrastructureCategory,
+        facilityName: state.facilityName,
         damageType: state.damageType,
-        passabilityLevel: state.passabilityLevel,
-        isSingleLane: state.isSingleLane,
-        blockedDistanceMeters: state.blockedDistanceMeters,
+        damageLevel: state.damageLevel,
+        citizenPriority: state.citizenPriority,
+        description: state.description,
         anonymousName: state.anonymousName,
         anonymousEmail: state.anonymousEmail,
         anonymousContact: state.anonymousContact,
-        description: state.description,
       }),
     }
   )

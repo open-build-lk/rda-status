@@ -58,6 +58,10 @@ import {
   Phone,
   Calendar,
   Image as ImageIcon,
+  Building2,
+  School,
+  Stethoscope,
+  Zap,
 } from "lucide-react";
 
 interface MediaAttachment {
@@ -75,14 +79,19 @@ interface MediaAttachment {
 interface Report {
   id: string;
   reportNumber: string;
+  infrastructureCategory: string | null;
+  facilityName: string | null;
   damageType: string;
-  severity: number;
+  damageLevel: string | null;
+  citizenPriority: string | null;
+  adminPriority: string | null;
   status: string;
   latitude: number;
   longitude: number;
+  province: string | null;
+  district: string | null;
   locationName: string | null;
   description: string;
-  passabilityLevel: string | null;
   anonymousName: string | null;
   anonymousEmail: string | null;
   anonymousContact: string | null;
@@ -90,11 +99,6 @@ interface Report {
   sourceType: string;
   createdAt: string;
   updatedAt: string;
-  provinceId: string | null;
-  districtId: string | null;
-  provinceName: string | null;
-  districtName: string | null;
-  roadLocation: string | null;
 }
 
 interface ReportWithMedia extends Report {
@@ -117,28 +121,36 @@ const statusIcons: Record<string, React.ReactNode> = {
   rejected: <XCircle className="w-3 h-3" />,
 };
 
+const infrastructureCategoryLabels: Record<string, { label: string; icon: React.ReactNode }> = {
+  government_building: { label: "Government Building", icon: <Building2 className="w-4 h-4" /> },
+  school: { label: "School", icon: <School className="w-4 h-4" /> },
+  hospital: { label: "Hospital", icon: <Stethoscope className="w-4 h-4" /> },
+  utility: { label: "Utility", icon: <Zap className="w-4 h-4" /> },
+};
+
 const damageTypeLabels: Record<string, string> = {
-  tree_fall: "Tree Fall",
-  bridge_collapse: "Bridge Collapse",
-  landslide: "Landslide",
-  flooding: "Flooding",
-  road_breakage: "Road Breakage",
-  washout: "Washout",
-  collapse: "Collapse",
-  blockage: "Blockage",
+  roof_damage: "Roof Damage",
+  wall_collapse: "Wall Collapse",
+  foundation_crack: "Foundation Crack",
+  flooding_damage: "Flooding Damage",
+  structural_crack: "Structural Crack",
+  complete_collapse: "Complete Collapse",
+  fire_damage: "Fire Damage",
+  water_damage: "Water Damage",
   other: "Other",
 };
 
-const passabilityOptions = [
-  { value: "unspecified", label: "Not specified" },
-  { value: "unpassable", label: "Unpassable" },
-  { value: "foot", label: "Foot only" },
-  { value: "bike", label: "Bike" },
-  { value: "3wheeler", label: "3-Wheeler" },
-  { value: "car", label: "Car" },
-  { value: "bus", label: "Bus" },
-  { value: "truck", label: "Truck" },
-];
+const damageLevelLabels: Record<string, { label: string; color: string }> = {
+  minor: { label: "Minor", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" },
+  major: { label: "Major", color: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400" },
+  destroyed: { label: "Destroyed", color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" },
+};
+
+const priorityLabels: Record<string, { label: string; color: string }> = {
+  high: { label: "High", color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" },
+  medium: { label: "Medium", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" },
+  low: { label: "Low", color: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" },
+};
 
 const columnHelper = createColumnHelper<Report>();
 
@@ -223,16 +235,30 @@ export function AdminReports() {
     }
   };
 
+  const handleQuickPriorityChange = async (id: string, newPriority: string | null) => {
+    try {
+      await updateReport(id, { adminPriority: newPriority });
+      setReports((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, adminPriority: newPriority } : r))
+      );
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to update priority");
+    }
+  };
+
   const handleSaveEdit = async () => {
     if (!editingReport) return;
     setSaving(true);
     try {
       await updateReport(editingReport.id, {
         status: editingReport.status,
+        infrastructureCategory: editingReport.infrastructureCategory,
+        facilityName: editingReport.facilityName,
         damageType: editingReport.damageType,
-        severity: editingReport.severity,
+        damageLevel: editingReport.damageLevel,
+        citizenPriority: editingReport.citizenPriority,
+        adminPriority: editingReport.adminPriority,
         description: editingReport.description,
-        passabilityLevel: editingReport.passabilityLevel,
         anonymousName: editingReport.anonymousName,
         anonymousEmail: editingReport.anonymousEmail,
         anonymousContact: editingReport.anonymousContact,
@@ -257,30 +283,97 @@ export function AdminReports() {
           <span className="font-mono text-sm">{info.getValue()}</span>
         ),
       }),
-      columnHelper.accessor("damageType", {
-        header: "Type",
-        cell: (info) => (
-          <span className="text-sm">
-            {damageTypeLabels[info.getValue()] || info.getValue()}
-          </span>
-        ),
-      }),
-      columnHelper.accessor("severity", {
-        header: "Severity",
+      columnHelper.accessor("infrastructureCategory", {
+        header: "Category",
         cell: (info) => {
-          const severity = info.getValue();
-          const colors = [
-            "",
-            "text-green-600",
-            "text-lime-600",
-            "text-yellow-600",
-            "text-orange-600",
-            "text-red-600",
-          ];
-          return (
-            <span className={`font-medium ${colors[severity] || ""}`}>
-              {severity}/5
+          const value = info.getValue();
+          if (!value) return <span className="text-gray-400 text-sm">-</span>;
+          const cat = infrastructureCategoryLabels[value];
+          return cat ? (
+            <span className="inline-flex items-center gap-1 text-sm">
+              {cat.icon}
+              {cat.label}
             </span>
+          ) : (
+            <span className="text-sm">{value}</span>
+          );
+        },
+        filterFn: (row, id, value) => {
+          if (value === "all") return true;
+          return row.getValue(id) === value;
+        },
+      }),
+      columnHelper.accessor("facilityName", {
+        header: "Facility",
+        cell: (info) => {
+          const value = info.getValue();
+          return value ? (
+            <span className="text-sm max-w-[150px] truncate block" title={value}>
+              {value}
+            </span>
+          ) : (
+            <span className="text-gray-400 text-sm">-</span>
+          );
+        },
+      }),
+      columnHelper.accessor("damageLevel", {
+        header: "Damage",
+        cell: (info) => {
+          const value = info.getValue();
+          if (!value) return <span className="text-gray-400 text-sm">-</span>;
+          const level = damageLevelLabels[value];
+          return level ? (
+            <span className={`inline-flex px-2 py-0.5 rounded text-xs ${level.color}`}>
+              {level.label}
+            </span>
+          ) : (
+            <span className="text-sm">{value}</span>
+          );
+        },
+      }),
+      columnHelper.accessor("citizenPriority", {
+        header: "Citizen Priority",
+        cell: (info) => {
+          const value = info.getValue();
+          if (!value) return <span className="text-gray-400 text-sm">-</span>;
+          const priority = priorityLabels[value];
+          return priority ? (
+            <span className={`inline-flex px-2 py-0.5 rounded text-xs ${priority.color}`}>
+              {priority.label}
+            </span>
+          ) : (
+            <span className="text-sm">{value}</span>
+          );
+        },
+      }),
+      columnHelper.accessor("adminPriority", {
+        header: "Admin Priority",
+        cell: (info) => {
+          const value = info.getValue();
+          const reportId = info.row.original.id;
+          return (
+            <Select
+              value={value || "unset"}
+              onValueChange={(newValue: string) =>
+                handleQuickPriorityChange(reportId, newValue === "unset" ? null : newValue)
+              }
+            >
+              <SelectTrigger className="w-[100px] h-8 text-xs">
+                {value ? (
+                  <span className={`inline-flex px-1.5 py-0.5 rounded text-xs ${priorityLabels[value]?.color || ""}`}>
+                    {priorityLabels[value]?.label || value}
+                  </span>
+                ) : (
+                  <span className="text-gray-400">Set...</span>
+                )}
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="unset">Not Set</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="low">Low</SelectItem>
+              </SelectContent>
+            </Select>
           );
         },
       }),
@@ -320,34 +413,7 @@ export function AdminReports() {
           return row.getValue(id) === value;
         },
       }),
-      columnHelper.accessor("passabilityLevel", {
-        header: "Passability",
-        cell: (info) => {
-          const value = info.getValue();
-          return value ? (
-            <span className="text-sm">{value}</span>
-          ) : (
-            <span className="text-gray-400 text-sm">-</span>
-          );
-        },
-      }),
-      columnHelper.accessor("description", {
-        header: "Description",
-        cell: (info) => (
-          <span className="text-sm line-clamp-2 max-w-[200px]">
-            {info.getValue()}
-          </span>
-        ),
-      }),
-      columnHelper.accessor("sourceType", {
-        header: "Source",
-        cell: (info) => (
-          <span className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
-            {info.getValue()}
-          </span>
-        ),
-      }),
-      columnHelper.accessor("provinceName", {
+      columnHelper.accessor("province", {
         header: "Province",
         cell: (info) => {
           const value = info.getValue();
@@ -358,25 +424,12 @@ export function AdminReports() {
           );
         },
       }),
-      columnHelper.accessor("districtName", {
+      columnHelper.accessor("district", {
         header: "District",
         cell: (info) => {
           const value = info.getValue();
           return value ? (
             <span className="text-sm">{value}</span>
-          ) : (
-            <span className="text-gray-400 text-sm">-</span>
-          );
-        },
-      }),
-      columnHelper.accessor("roadLocation", {
-        header: "Road/Location",
-        cell: (info) => {
-          const value = info.getValue();
-          return value ? (
-            <span className="text-sm max-w-[200px] truncate block" title={value}>
-              {value}
-            </span>
           ) : (
             <span className="text-gray-400 text-sm">-</span>
           );
@@ -469,21 +522,38 @@ export function AdminReports() {
     <div className="p-4 space-y-4">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold">All Reports</h1>
-        <div className="flex items-center gap-2">
+        <h1 className="text-2xl font-bold">Infrastructure Reports</h1>
+        <div className="flex items-center gap-2 flex-wrap">
           <Input
             placeholder="Search..."
             value={globalFilter}
             onChange={(e) => setGlobalFilter(e.target.value)}
-            className="w-[200px]"
+            className="w-[160px]"
           />
+          <Select
+            value={(table.getColumn("infrastructureCategory")?.getFilterValue() as string) || "all"}
+            onValueChange={(value: string) =>
+              table.getColumn("infrastructureCategory")?.setFilterValue(value === "all" ? undefined : value)
+            }
+          >
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="All Categories" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              <SelectItem value="government_building">Government Building</SelectItem>
+              <SelectItem value="school">School</SelectItem>
+              <SelectItem value="hospital">Hospital</SelectItem>
+              <SelectItem value="utility">Utility</SelectItem>
+            </SelectContent>
+          </Select>
           <Select
             value={(table.getColumn("status")?.getFilterValue() as string) || "all"}
             onValueChange={(value: string) =>
               table.getColumn("status")?.setFilterValue(value === "all" ? undefined : value)
             }
           >
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-[130px]">
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
             <SelectContent>
@@ -618,25 +688,38 @@ export function AdminReports() {
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Status</Label>
+                  <Label>Infrastructure Category</Label>
                   <Select
-                    value={editingReport.status}
+                    value={editingReport.infrastructureCategory || ""}
                     onValueChange={(value: string) =>
-                      setEditingReport({ ...editingReport, status: value })
+                      setEditingReport({ ...editingReport, infrastructureCategory: value })
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Select category..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="new">New</SelectItem>
-                      <SelectItem value="verified">Verified</SelectItem>
-                      <SelectItem value="in_progress">In Progress</SelectItem>
-                      <SelectItem value="resolved">Resolved</SelectItem>
-                      <SelectItem value="rejected">Rejected</SelectItem>
+                      {Object.entries(infrastructureCategoryLabels).map(([value, { label }]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
+                  <Label>Facility Name</Label>
+                  <Input
+                    value={editingReport.facilityName || ""}
+                    onChange={(e) =>
+                      setEditingReport({ ...editingReport, facilityName: e.target.value || null })
+                    }
+                    placeholder="e.g., Colombo Municipal Council Building"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Damage Type</Label>
                   <Select
@@ -657,52 +740,81 @@ export function AdminReports() {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
+                  <Label>Damage Level</Label>
+                  <Select
+                    value={editingReport.damageLevel || ""}
+                    onValueChange={(value: string) =>
+                      setEditingReport({ ...editingReport, damageLevel: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select level..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="minor">Minor</SelectItem>
+                      <SelectItem value="major">Major</SelectItem>
+                      <SelectItem value="destroyed">Destroyed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label>Severity (1-5)</Label>
+                  <Label>Status</Label>
                   <Select
-                    value={String(editingReport.severity)}
+                    value={editingReport.status}
                     onValueChange={(value: string) =>
-                      setEditingReport({
-                        ...editingReport,
-                        severity: parseInt(value),
-                      })
+                      setEditingReport({ ...editingReport, status: value })
                     }
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="1">1 - Minor</SelectItem>
-                      <SelectItem value="2">2 - Low</SelectItem>
-                      <SelectItem value="3">3 - Medium</SelectItem>
-                      <SelectItem value="4">4 - High</SelectItem>
-                      <SelectItem value="5">5 - Critical</SelectItem>
+                      <SelectItem value="new">New</SelectItem>
+                      <SelectItem value="verified">Verified</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="resolved">Resolved</SelectItem>
+                      <SelectItem value="rejected">Rejected</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Passability Level</Label>
+                  <Label>Citizen Priority</Label>
                   <Select
-                    value={editingReport.passabilityLevel || "unspecified"}
+                    value={editingReport.citizenPriority || ""}
                     onValueChange={(value: string) =>
-                      setEditingReport({
-                        ...editingReport,
-                        passabilityLevel: value === "unspecified" ? null : value,
-                      })
+                      setEditingReport({ ...editingReport, citizenPriority: value })
                     }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {passabilityOptions.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="low">Low</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Admin Priority</Label>
+                  <Select
+                    value={editingReport.adminPriority || "unset"}
+                    onValueChange={(value: string) =>
+                      setEditingReport({ ...editingReport, adminPriority: value === "unset" ? null : value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Not set" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unset">Not Set</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="low">Low</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -896,9 +1008,31 @@ export function AdminReports() {
 
               {/* Report Details Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Left Column - Incident Details */}
+                {/* Left Column - Infrastructure Details */}
                 <div className="space-y-4">
-                  <h3 className="text-sm font-medium text-gray-500 border-b pb-2">Incident Details</h3>
+                  <h3 className="text-sm font-medium text-gray-500 border-b pb-2">Infrastructure Details</h3>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs text-gray-500">Category</Label>
+                      <p className="font-medium inline-flex items-center gap-1">
+                        {selectedReport.infrastructureCategory && infrastructureCategoryLabels[selectedReport.infrastructureCategory] ? (
+                          <>
+                            {infrastructureCategoryLabels[selectedReport.infrastructureCategory].icon}
+                            {infrastructureCategoryLabels[selectedReport.infrastructureCategory].label}
+                          </>
+                        ) : (
+                          selectedReport.infrastructureCategory || "-"
+                        )}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-gray-500">Facility Name</Label>
+                      <p className="font-medium">
+                        {selectedReport.facilityName || "-"}
+                      </p>
+                    </div>
+                  </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -908,32 +1042,37 @@ export function AdminReports() {
                       </p>
                     </div>
                     <div>
-                      <Label className="text-xs text-gray-500">Severity</Label>
-                      <p className="font-medium">
-                        <span className={
-                          selectedReport.severity >= 4 ? "text-red-600" :
-                          selectedReport.severity >= 3 ? "text-orange-600" :
-                          selectedReport.severity >= 2 ? "text-yellow-600" :
-                          "text-green-600"
-                        }>
-                          {selectedReport.severity}/5
+                      <Label className="text-xs text-gray-500">Damage Level</Label>
+                      {selectedReport.damageLevel && damageLevelLabels[selectedReport.damageLevel] ? (
+                        <span className={`inline-flex px-2 py-0.5 rounded text-xs ${damageLevelLabels[selectedReport.damageLevel].color}`}>
+                          {damageLevelLabels[selectedReport.damageLevel].label}
                         </span>
-                      </p>
+                      ) : (
+                        <p className="font-medium">-</p>
+                      )}
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-xs text-gray-500">Passability</Label>
-                      <p className="font-medium">
-                        {selectedReport.passabilityLevel || "-"}
-                      </p>
+                      <Label className="text-xs text-gray-500">Citizen Priority</Label>
+                      {selectedReport.citizenPriority && priorityLabels[selectedReport.citizenPriority] ? (
+                        <span className={`inline-flex px-2 py-0.5 rounded text-xs ${priorityLabels[selectedReport.citizenPriority].color}`}>
+                          {priorityLabels[selectedReport.citizenPriority].label}
+                        </span>
+                      ) : (
+                        <p className="font-medium">-</p>
+                      )}
                     </div>
                     <div>
-                      <Label className="text-xs text-gray-500">Source</Label>
-                      <p className="font-medium capitalize">
-                        {selectedReport.sourceType.replace("_", " ")}
-                      </p>
+                      <Label className="text-xs text-gray-500">Admin Priority</Label>
+                      {selectedReport.adminPriority && priorityLabels[selectedReport.adminPriority] ? (
+                        <span className={`inline-flex px-2 py-0.5 rounded text-xs ${priorityLabels[selectedReport.adminPriority].color}`}>
+                          {priorityLabels[selectedReport.adminPriority].label}
+                        </span>
+                      ) : (
+                        <p className="text-gray-400 text-sm">Not set</p>
+                      )}
                     </div>
                   </div>
 
@@ -948,6 +1087,11 @@ export function AdminReports() {
                     <Label className="text-xs text-gray-500">Location</Label>
                     {selectedReport.locationName && (
                       <p className="font-medium mt-1">{selectedReport.locationName}</p>
+                    )}
+                    {(selectedReport.province || selectedReport.district) && (
+                      <p className="text-sm text-gray-600 mt-1">
+                        {[selectedReport.district, selectedReport.province].filter(Boolean).join(", ")}
+                      </p>
                     )}
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-sm font-mono text-gray-500">

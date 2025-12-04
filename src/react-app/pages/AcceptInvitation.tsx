@@ -171,7 +171,7 @@ export function AcceptInvitation() {
         <CardHeader className="text-center">
           <CardTitle>Accept Invitation</CardTitle>
           <CardDescription>
-            You've been invited to join Sri Lanka Road Status
+            You've been invited to join Sri Lanka Infrastructure Recovery
           </CardDescription>
         </CardHeader>
         <CardContent>

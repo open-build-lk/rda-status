@@ -52,7 +52,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
                     }}
                     className="text-sm font-semibold text-gray-800 dark:text-gray-100"
                   >
-                    Sri Lanka Road Status
+                    Infrastructure Recovery
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
@@ -65,7 +65,7 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
             </Breadcrumb>
           ) : (
             <span className="text-sm font-semibold text-gray-700 dark:text-gray-100">
-              Sri Lanka Road Status
+              Infrastructure Recovery
             </span>
           )}
         </div>

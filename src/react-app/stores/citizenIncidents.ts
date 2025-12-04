@@ -3,32 +3,33 @@ import { LatLngExpression } from "leaflet";
 
 export interface CitizenIncidentData {
   id: string;
+  reportNumber: string;
   latitude: number;
   longitude: number;
+  province: string | null;
+  district: string | null;
   locationName: string | null;
+  infrastructureCategory: string | null;
+  facilityName: string | null;
   damageType: string;
-  passabilityLevel: string | null;
-  isSingleLane: boolean | null;
+  damageLevel: string | null;
   description: string | null;
   createdAt: string;
-  reportNumber: string;
-  districtName: string | null;
-  provinceName: string | null;
-  roadLocation: string | null;
 }
 
 export interface ProcessedIncident {
   id: string;
   reportNumber: string;
   position: LatLngExpression;
+  province: string;
+  district: string;
+  locationName: string | null;
+  infrastructureCategory: string;
+  facilityName: string;
   damageType: string;
-  passabilityLevel: string;
-  isSingleLane: boolean;
+  damageLevel: string;
   description: string;
   createdAt: string;
-  districtName: string;
-  provinceName: string;
-  roadLocation: string | null;
 }
 
 interface CitizenIncidentsState {
@@ -47,19 +48,20 @@ function processIncidents(
   rawIncidents: CitizenIncidentData[]
 ): ProcessedIncident[] {
   return rawIncidents
-    .filter((inc) => inc.latitude && inc.longitude && inc.provinceName && inc.districtName)
+    .filter((inc) => inc.latitude && inc.longitude && inc.infrastructureCategory)
     .map((inc) => ({
       id: inc.id,
       reportNumber: inc.reportNumber,
       position: [inc.latitude, inc.longitude] as LatLngExpression,
+      province: inc.province || "Unknown",
+      district: inc.district || "Unknown",
+      locationName: inc.locationName,
+      infrastructureCategory: inc.infrastructureCategory || "other",
+      facilityName: inc.facilityName || "Unknown Facility",
       damageType: inc.damageType || "other",
-      passabilityLevel: inc.passabilityLevel || "unknown",
-      isSingleLane: inc.isSingleLane ?? false,
+      damageLevel: inc.damageLevel || "minor",
       description: inc.description || "No description provided",
       createdAt: inc.createdAt,
-      districtName: inc.districtName || "Unknown",
-      provinceName: inc.provinceName || "Unknown",
-      roadLocation: inc.roadLocation,
     }));
 }
 

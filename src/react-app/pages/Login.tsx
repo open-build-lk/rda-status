@@ -176,7 +176,7 @@ export function Login() {
               </p>
             ) : (
               <p className="text-center text-sm text-gray-500">
-                New to Sri Lanka Road Status?{" "}
+                New to Infrastructure Recovery?{" "}
                 <button
                   type="button"
                   onClick={() => setIsNewUser(true)}
