@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import clsx from "clsx";
-import { AlertCircle, Check, MapPin, Loader2, Navigation } from "lucide-react";
+import { AlertCircle, Check, MapPin, Loader2, Navigation, Images } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -434,6 +434,19 @@ export function ReportIncident() {
             {!hasGeoPhoto && hasPhotos && (
               <div className="mt-3 text-xs text-gray-600 dark:text-gray-300">
                 We need at least one photo with GPS. Enable location for your camera, then retake.
+              </div>
+            )}
+
+            {/* Bulk upload link */}
+            {!hasPhotos && (
+              <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+                <Link
+                  to="/report/bulk"
+                  className="flex items-center justify-center gap-2 text-sm text-primary-600 dark:text-primary-400 hover:underline"
+                >
+                  <Images className="h-4 w-4" />
+                  Have existing photos? Upload in bulk
+                </Link>
               </div>
             )}
           </CardContent>
