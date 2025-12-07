@@ -32,7 +32,6 @@ export function SubmissionProgress({
   const totalIncidents = incidents.length;
 
   // Determine the current state
-  const hasStarted = results.length > 0 || isSubmitting;
   const isComplete = results.length === totalIncidents && !isSubmitting;
   const allFailed = isComplete && successCount === 0 && failedCount > 0;
   const allSucceeded = isComplete && successCount === totalIncidents;
