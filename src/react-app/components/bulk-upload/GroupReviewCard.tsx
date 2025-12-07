@@ -333,7 +333,7 @@ export function GroupReviewCard({
                 </Label>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-start gap-3">
                 <input
                   type="checkbox"
                   id={`safetyBarriers-${incident.groupId}`}
@@ -346,14 +346,19 @@ export function GroupReviewCard({
                       },
                     })
                   }
-                  className="h-5 w-5 rounded border-gray-300"
+                  className="h-5 w-5 mt-0.5 rounded border-gray-300"
                 />
-                <Label
-                  htmlFor={`safetyBarriers-${incident.groupId}`}
-                  className="text-sm font-normal"
-                >
-                  Needs safety barriers
-                </Label>
+                <div>
+                  <Label
+                    htmlFor={`safetyBarriers-${incident.groupId}`}
+                    className="text-sm font-normal"
+                  >
+                    Needs safety barriers
+                  </Label>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Road is carefully usable but requires barriers
+                  </p>
+                </div>
               </div>
             </div>
 

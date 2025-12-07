@@ -56,6 +56,7 @@ export function ReportIncident() {
     damageType,
     passabilityLevel,
     isSingleLane,
+    needsSafetyBarriers,
     blockedDistanceMeters,
     anonymousName,
     anonymousEmail,
@@ -73,6 +74,7 @@ export function ReportIncident() {
     setDamageType,
     setPassabilityLevel,
     setIsSingleLane,
+    setNeedsSafetyBarriers,
     setBlockedDistance,
     setAnonymousName,
     setAnonymousEmail,
@@ -245,6 +247,7 @@ export function ReportIncident() {
         damageType,
         passabilityLevel: passabilityLevel || undefined,
         isSingleLane,
+        needsSafetyBarriers,
         blockedDistanceMeters: blockedDistanceMeters || undefined,
         anonymousName: anonymousName || undefined,
         anonymousEmail: anonymousEmail || undefined,
@@ -583,6 +586,24 @@ export function ReportIncident() {
               <Label htmlFor="singleLane" className="text-sm font-normal">
                 Single lane traffic possible
               </Label>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <input
+                type="checkbox"
+                id="safetyBarriers"
+                checked={needsSafetyBarriers}
+                onChange={(e) => setNeedsSafetyBarriers(e.target.checked)}
+                className="w-4 h-4 mt-0.5 rounded border-gray-300"
+              />
+              <div>
+                <Label htmlFor="safetyBarriers" className="text-sm font-normal">
+                  Needs safety barriers
+                </Label>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Road is carefully usable but requires barriers
+                </p>
+              </div>
             </div>
 
             <div className="space-y-2">
