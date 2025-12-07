@@ -249,9 +249,48 @@ reportsRoutes.post(
     // Log the values for debugging
     console.log("Inserting damage report with values:", JSON.stringify(insertValues, null, 2));
 
-    // Create the damage report
+    // Create the damage report using raw SQL (bypassing Drizzle ORM issues with D1)
     try {
-      await db.insert(damageReports).values(insertValues);
+      const createdAtTs = Math.floor(now.getTime() / 1000);
+      const updatedAtTs = Math.floor(now.getTime() / 1000);
+
+      await c.env.DB.prepare(`
+        INSERT INTO damage_reports (
+          id, report_number, submitter_id, anonymous_name, anonymous_email, anonymous_contact,
+          source_type, source_channel, latitude, longitude, location_name, asset_type,
+          damage_type, severity, description, status, passability_level,
+          is_single_lane, needs_safety_barriers, blocked_distance_meters,
+          incident_details, submission_source, is_verified_submitter, claim_token,
+          created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        insertValues.id,
+        insertValues.reportNumber,
+        insertValues.submitterId,
+        insertValues.anonymousName,
+        insertValues.anonymousEmail,
+        insertValues.anonymousContact,
+        insertValues.sourceType,
+        insertValues.sourceChannel,
+        insertValues.latitude,
+        insertValues.longitude,
+        insertValues.locationName,
+        insertValues.assetType,
+        insertValues.damageType,
+        insertValues.severity,
+        insertValues.description,
+        insertValues.status,
+        insertValues.passabilityLevel,
+        insertValues.isSingleLane ? 1 : 0,
+        insertValues.needsSafetyBarriers ? 1 : 0,
+        insertValues.blockedDistanceMeters,
+        insertValues.incidentDetails,
+        insertValues.submissionSource,
+        insertValues.isVerifiedSubmitter ? 1 : 0,
+        insertValues.claimToken,
+        createdAtTs,
+        updatedAtTs
+      ).run();
     } catch (error) {
       console.error("Failed to insert damage report:", error);
       console.error("Insert values were:", JSON.stringify(insertValues, null, 2));
