@@ -12,6 +12,12 @@ import { DAMAGE_ICONS } from "./DisasterMap";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+interface MediaAttachment {
+  id: string;
+  storageKey: string;
+  mediaType: string;
+}
+
 interface UnverifiedReport {
   id: string;
   reportNumber: string;
@@ -32,6 +38,7 @@ interface UnverifiedReport {
   districtName: string | null;
   provinceName: string | null;
   roadLocation: string | null;
+  media: MediaAttachment[];
 }
 
 // Create marker icon for unverified reports
@@ -183,7 +190,7 @@ export function UnverifiedReportsMap({ onReportSelect, selectedReportId }: Unver
               }}
             >
               <Popup>
-                <div className="min-w-64">
+                <div className="min-w-64 max-w-80">
                   <div className="mb-2 flex items-center gap-2">
                     <span className="rounded bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
                       Unverified
@@ -231,6 +238,32 @@ export function UnverifiedReportsMap({ onReportSelect, selectedReportId }: Unver
                   )}
 
                   <p className="mb-2 text-sm">{report.description}</p>
+
+                  {/* Media attachments */}
+                  {report.media && report.media.length > 0 && (
+                    <div className="mb-2">
+                      <p className="text-xs font-medium text-gray-700 mb-1">
+                        Attachments ({report.media.length})
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {report.media.map((media) => (
+                          <div key={media.id} className="relative aspect-square">
+                            {media.mediaType === "image" ? (
+                              <img
+                                src={`/api/v1/upload/photo/${media.storageKey}`}
+                                alt="Report attachment"
+                                className="w-full h-full object-cover rounded border border-gray-200"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded border border-gray-200">
+                                <span className="text-xs text-gray-500">Video</span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {report.anonymousName && (
                     <p className="text-xs text-gray-500">

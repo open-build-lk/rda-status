@@ -205,33 +205,47 @@ adminRoutes.get("/reports/unverified", requireRole("field_officer", "planner", "
     .where(eq(damageReports.status, "new"))
     .orderBy(desc(damageReports.createdAt));
 
-  // Parse locationName to extract province and district
-  const reportsWithLocation = reports.map(report => {
-    let districtName = null;
-    let provinceName = null;
-    let roadLocation = report.locationName;
+  // Fetch media for all reports and parse location data
+  const reportsWithLocationAndMedia = await Promise.all(
+    reports.map(async (report) => {
+      // Fetch media attachments for this report
+      const media = await db
+        .select({
+          id: mediaAttachments.id,
+          storageKey: mediaAttachments.storageKey,
+          mediaType: mediaAttachments.mediaType,
+        })
+        .from(mediaAttachments)
+        .where(eq(mediaAttachments.reportId, report.id));
 
-    if (report.locationName) {
-      const match = report.locationName.match(/\(([^,]+),\s*([^)]+)\)/);
-      if (match) {
-        districtName = match[1].trim();
-        provinceName = match[2].trim();
-        const roadMatch = report.locationName.match(/^([^(]+)/);
-        if (roadMatch && roadMatch[1].trim()) {
-          roadLocation = roadMatch[1].trim();
+      // Parse locationName to extract province and district
+      let districtName = null;
+      let provinceName = null;
+      let roadLocation = report.locationName;
+
+      if (report.locationName) {
+        const match = report.locationName.match(/\(([^,]+),\s*([^)]+)\)/);
+        if (match) {
+          districtName = match[1].trim();
+          provinceName = match[2].trim();
+          const roadMatch = report.locationName.match(/^([^(]+)/);
+          if (roadMatch && roadMatch[1].trim()) {
+            roadLocation = roadMatch[1].trim();
+          }
         }
       }
-    }
 
-    return {
-      ...report,
-      districtName,
-      provinceName,
-      roadLocation,
-    };
-  });
+      return {
+        ...report,
+        districtName,
+        provinceName,
+        roadLocation,
+        media,
+      };
+    })
+  );
 
-  return c.json(reportsWithLocation);
+  return c.json(reportsWithLocationAndMedia);
 });
 
 // GET /api/v1/admin/reports/:id - Get single report with media
