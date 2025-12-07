@@ -121,10 +121,6 @@ adminRoutes.get("/segments-count", requireRole("admin", "super_admin"), async (c
 adminRoutes.get("/reports", requireRole("field_officer", "planner", "admin", "super_admin"), async (c) => {
   const db = createDb(c.env.DB);
 
-  // Create aliases for joining locations table twice
-  const provinceLocation = alias(locations, "province_location");
-  const districtLocation = alias(locations, "district_location");
-
   const rawReports = await db
     .select({
       id: damageReports.id,
@@ -146,40 +142,35 @@ adminRoutes.get("/reports", requireRole("field_officer", "planner", "admin", "su
       updatedAt: damageReports.updatedAt,
       provinceId: damageReports.provinceId,
       districtId: damageReports.districtId,
-      provinceName: provinceLocation.nameEn,
-      districtName: districtLocation.nameEn,
     })
     .from(damageReports)
-    .leftJoin(provinceLocation, eq(damageReports.provinceId, provinceLocation.id))
-    .leftJoin(districtLocation, eq(damageReports.districtId, districtLocation.id))
     .orderBy(desc(damageReports.createdAt));
 
-  // Parse locationName to extract district and province if not already populated
+  // Parse locationName to extract district and province
   const reports = rawReports.map(report => {
-    let districtName = report.districtName;
-    let provinceName = report.provinceName;
+    let districtName = null;
+    let provinceName = null;
     let roadLocation = report.locationName;
 
-    // If district/province not populated but locationName exists, parse it
     // Format is typically: "Road Name (district, province)" or "(district, province)"
-    if ((!districtName || !provinceName) && report.locationName) {
+    if (report.locationName) {
       const match = report.locationName.match(/\(([^,]+),\s*([^)]+)\)/);
       if (match) {
-        districtName = districtName || match[1].trim();
-        provinceName = provinceName || match[2].trim();
+        districtName = match[1].trim();
+        provinceName = match[2].trim();
         // Extract road/location name (part before the parentheses)
         const roadMatch = report.locationName.match(/^([^(]+)/);
-        if (roadMatch) {
-          roadLocation = roadMatch[1].trim() || report.locationName;
+        if (roadMatch && roadMatch[1].trim()) {
+          roadLocation = roadMatch[1].trim();
         }
       }
     }
 
     return {
       ...report,
-      districtName: districtName || null,
-      provinceName: provinceName || null,
-      roadLocation: roadLocation || null,
+      districtName,
+      provinceName,
+      roadLocation,
     };
   });
 
