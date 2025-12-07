@@ -14,6 +14,7 @@ import {
   AdminUsers,
   AcceptInvitation,
   BulkUpload,
+  UnverifiedReports,
 } from "@/pages";
 
 function AppContent() {
@@ -60,6 +61,14 @@ function AppContent() {
           element={
             <ProtectedRoute allowedRoles={["field_officer", "planner", "admin", "super_admin"]}>
               <AdminReports />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/reports/unverified"
+          element={
+            <ProtectedRoute allowedRoles={["field_officer", "planner", "admin", "super_admin"]}>
+              <UnverifiedReports />
             </ProtectedRoute>
           }
         />
