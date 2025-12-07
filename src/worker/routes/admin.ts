@@ -14,6 +14,7 @@ import {
 } from "../../react-app/data/initialRoadSegments";
 import { snappedRoadPaths } from "../../react-app/data/snappedRoadPaths";
 import { authMiddleware, requireRole } from "../middleware/auth";
+import { isValidTransition, getAllowedTransitions } from "../../shared/constants";
 
 const adminRoutes = new Hono<{ Bindings: Env }>();
 
@@ -142,6 +143,7 @@ adminRoutes.get("/reports", requireRole("field_officer", "planner", "admin", "su
       anonymousContact: damageReports.anonymousContact,
       isVerifiedSubmitter: damageReports.isVerifiedSubmitter,
       sourceType: damageReports.sourceType,
+      workflowData: damageReports.workflowData,
       createdAt: damageReports.createdAt,
       updatedAt: damageReports.updatedAt,
       provinceId: damageReports.provinceId,
@@ -214,6 +216,13 @@ const updateStatusSchema = z.object({
   status: z.enum(["new", "verified", "in_progress", "resolved", "rejected"]),
 });
 
+// Workflow data schema (flexible JSON for progress, cost, etc.)
+const workflowDataSchema = z.object({
+  progressPercent: z.number().min(0).max(100).optional(),
+  estimatedCostLkr: z.number().min(0).nullable().optional(),
+  notes: z.string().optional(),
+}).passthrough(); // Allow additional fields for flexibility
+
 // Update report schema (all editable fields)
 const updateReportSchema = z.object({
   status: z.enum(["new", "verified", "in_progress", "resolved", "rejected"]).optional(),
@@ -235,6 +244,7 @@ const updateReportSchema = z.object({
   anonymousEmail: z.string().nullable().optional(),
   anonymousContact: z.string().nullable().optional(),
   isVerifiedSubmitter: z.boolean().optional(),
+  workflowData: workflowDataSchema.optional(),
 });
 
 // PATCH /api/v1/admin/reports/:id/status - Update report status
@@ -245,8 +255,9 @@ adminRoutes.patch(
   zValidator("json", updateStatusSchema),
   async (c) => {
     const db = createDb(c.env.DB);
+    const auth = getAuth(c);
     const { id } = c.req.param();
-    const { status } = c.req.valid("json");
+    const { status: newStatus } = c.req.valid("json");
 
     const [report] = await db
       .select()
@@ -257,12 +268,25 @@ adminRoutes.patch(
       return c.json({ error: "Report not found" }, 404);
     }
 
+    // Validate status transition based on user role
+    const userRole = auth?.role || "citizen";
+    if (!isValidTransition(userRole, report.status, newStatus)) {
+      const allowed = getAllowedTransitions(userRole, report.status);
+      return c.json(
+        {
+          error: `Invalid status transition from '${report.status}' to '${newStatus}'`,
+          allowedTransitions: allowed,
+        },
+        400
+      );
+    }
+
     await db
       .update(damageReports)
-      .set({ status, updatedAt: new Date() })
+      .set({ status: newStatus, updatedAt: new Date() })
       .where(eq(damageReports.id, id));
 
-    return c.json({ success: true, status });
+    return c.json({ success: true, status: newStatus });
   }
 );
 
@@ -274,6 +298,7 @@ adminRoutes.patch(
   zValidator("json", updateReportSchema),
   async (c) => {
     const db = createDb(c.env.DB);
+    const auth = getAuth(c);
     const { id } = c.req.param();
     const updates = c.req.valid("json");
 
@@ -284,6 +309,21 @@ adminRoutes.patch(
 
     if (!report) {
       return c.json({ error: "Report not found" }, 404);
+    }
+
+    // Validate status transition if status is being updated
+    if (updates.status !== undefined && updates.status !== report.status) {
+      const userRole = auth?.role || "citizen";
+      if (!isValidTransition(userRole, report.status, updates.status)) {
+        const allowed = getAllowedTransitions(userRole, report.status);
+        return c.json(
+          {
+            error: `Invalid status transition from '${report.status}' to '${updates.status}'`,
+            allowedTransitions: allowed,
+          },
+          400
+        );
+      }
     }
 
     // Build update object with only provided fields
@@ -297,6 +337,13 @@ adminRoutes.patch(
     if (updates.anonymousEmail !== undefined) updateData.anonymousEmail = updates.anonymousEmail;
     if (updates.anonymousContact !== undefined) updateData.anonymousContact = updates.anonymousContact;
     if (updates.isVerifiedSubmitter !== undefined) updateData.isVerifiedSubmitter = updates.isVerifiedSubmitter ? 1 : 0;
+
+    // Handle workflowData - merge with existing data
+    if (updates.workflowData !== undefined) {
+      const existingWorkflow = report.workflowData ? JSON.parse(report.workflowData as string) : {};
+      const mergedWorkflow = { ...existingWorkflow, ...updates.workflowData };
+      updateData.workflowData = JSON.stringify(mergedWorkflow);
+    }
 
     await db
       .update(damageReports)

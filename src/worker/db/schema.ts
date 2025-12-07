@@ -104,6 +104,8 @@ export const damageReports = sqliteTable(
     submissionSource: text("submission_source"), // citizen_web, citizen_mobile, official
     isVerifiedSubmitter: integer("is_verified_submitter", { mode: "boolean" }).default(false),
     claimToken: text("claim_token"), // For anonymous users to claim reports later
+    // Workflow data (admin/field officer updates)
+    workflowData: text("workflow_data"), // JSON: { progressPercent, estimatedCostLkr, notes, etc. }
     // Timestamps
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
