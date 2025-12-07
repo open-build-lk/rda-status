@@ -7,6 +7,7 @@ import {
   LogOut,
   MapPin,
   Users,
+  MapPinOff,
 } from "lucide-react";
 
 import { useAuthStore } from "@/stores/auth";
@@ -68,6 +69,12 @@ const adminItems: NavItem[] = [
     title: "Citizen Reports",
     url: "/admin/reports",
     icon: Shield,
+    roles: ["field_officer", "planner", "admin", "super_admin"],
+  },
+  {
+    title: "Unverified Reports",
+    url: "/admin/reports/unverified",
+    icon: MapPinOff,
     roles: ["field_officer", "planner", "admin", "super_admin"],
   },
   {

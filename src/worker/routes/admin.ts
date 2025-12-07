@@ -186,6 +186,63 @@ adminRoutes.get("/reports", requireRole("field_officer", "planner", "admin", "su
   return c.json(reports);
 });
 
+// GET /api/v1/admin/reports/unverified - Get all unverified citizen reports for map view
+// Requires field_officer, planner, admin or super_admin role
+adminRoutes.get("/reports/unverified", requireRole("field_officer", "planner", "admin", "super_admin"), async (c) => {
+  const db = createDb(c.env.DB);
+
+  const reports = await db
+    .select({
+      id: damageReports.id,
+      reportNumber: damageReports.reportNumber,
+      latitude: damageReports.latitude,
+      longitude: damageReports.longitude,
+      locationName: damageReports.locationName,
+      damageType: damageReports.damageType,
+      severity: damageReports.severity,
+      status: damageReports.status,
+      passabilityLevel: damageReports.passabilityLevel,
+      isSingleLane: damageReports.isSingleLane,
+      description: damageReports.description,
+      createdAt: damageReports.createdAt,
+      anonymousName: damageReports.anonymousName,
+      anonymousEmail: damageReports.anonymousEmail,
+      anonymousContact: damageReports.anonymousContact,
+      sourceType: damageReports.sourceType,
+    })
+    .from(damageReports)
+    .where(eq(damageReports.status, "new"))
+    .orderBy(desc(damageReports.createdAt));
+
+  // Parse locationName to extract province and district
+  const reportsWithLocation = reports.map(report => {
+    let districtName = null;
+    let provinceName = null;
+    let roadLocation = report.locationName;
+
+    if (report.locationName) {
+      const match = report.locationName.match(/\(([^,]+),\s*([^)]+)\)/);
+      if (match) {
+        districtName = match[1].trim();
+        provinceName = match[2].trim();
+        const roadMatch = report.locationName.match(/^([^(]+)/);
+        if (roadMatch && roadMatch[1].trim()) {
+          roadLocation = roadMatch[1].trim();
+        }
+      }
+    }
+
+    return {
+      ...report,
+      districtName,
+      provinceName,
+      roadLocation,
+    };
+  });
+
+  return c.json(reportsWithLocation);
+});
+
 // GET /api/v1/admin/reports/:id - Get single report with media
 // Requires field_officer, planner, admin or super_admin role
 adminRoutes.get("/reports/:id", requireRole("field_officer", "planner", "admin", "super_admin"), async (c) => {
