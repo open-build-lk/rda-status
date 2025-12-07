@@ -38,6 +38,7 @@ interface IncidentReportState {
   damageType: DamageType | null;
   passabilityLevel: PassabilityLevel | null;
   isSingleLane: boolean;
+  needsSafetyBarriers: boolean;
   blockedDistanceMeters: number | null;
 
   // Step 3: Contact Info
@@ -70,6 +71,7 @@ interface IncidentReportActions {
   setDamageType: (type: DamageType) => void;
   setPassabilityLevel: (level: PassabilityLevel | null) => void;
   setIsSingleLane: (value: boolean) => void;
+  setNeedsSafetyBarriers: (value: boolean) => void;
   setBlockedDistance: (meters: number | null) => void;
   setAnonymousName: (name: string) => void;
   setAnonymousEmail: (email: string) => void;
@@ -96,6 +98,7 @@ const initialState: IncidentReportState = {
   damageType: null,
   passabilityLevel: null,
   isSingleLane: false,
+  needsSafetyBarriers: false,
   blockedDistanceMeters: null,
   anonymousName: "",
   anonymousEmail: "",
@@ -181,6 +184,10 @@ export const useIncidentReportStore = create<IncidentReportState & IncidentRepor
         set({ isSingleLane: value });
       },
 
+      setNeedsSafetyBarriers: (value: boolean) => {
+        set({ needsSafetyBarriers: value });
+      },
+
       setBlockedDistance: (meters: number | null) => {
         set({ blockedDistanceMeters: meters });
       },
@@ -231,6 +238,7 @@ export const useIncidentReportStore = create<IncidentReportState & IncidentRepor
         damageType: state.damageType,
         passabilityLevel: state.passabilityLevel,
         isSingleLane: state.isSingleLane,
+        needsSafetyBarriers: state.needsSafetyBarriers,
         blockedDistanceMeters: state.blockedDistanceMeters,
         anonymousName: state.anonymousName,
         anonymousEmail: state.anonymousEmail,

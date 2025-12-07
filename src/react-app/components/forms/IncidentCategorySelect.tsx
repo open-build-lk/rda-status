@@ -55,9 +55,9 @@ const categories: Category[] = [
   },
   {
     id: "bridge_collapse",
-    label: "Bridge Issue",
+    label: "Bridge Collapse",
     icon: <AlertTriangle className="w-6 h-6" />,
-    description: "Bridge damage or collapse",
+    description: "Bridge damaged or collapsed",
   },
   {
     id: "washout",

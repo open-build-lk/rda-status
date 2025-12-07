@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import clsx from "clsx";
-import { AlertCircle, Check, MapPin, Loader2, Navigation } from "lucide-react";
+import { AlertCircle, Check, MapPin, Loader2, Navigation, Images } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -56,6 +56,7 @@ export function ReportIncident() {
     damageType,
     passabilityLevel,
     isSingleLane,
+    needsSafetyBarriers,
     blockedDistanceMeters,
     anonymousName,
     anonymousEmail,
@@ -73,6 +74,7 @@ export function ReportIncident() {
     setDamageType,
     setPassabilityLevel,
     setIsSingleLane,
+    setNeedsSafetyBarriers,
     setBlockedDistance,
     setAnonymousName,
     setAnonymousEmail,
@@ -245,6 +247,7 @@ export function ReportIncident() {
         damageType,
         passabilityLevel: passabilityLevel || undefined,
         isSingleLane,
+        needsSafetyBarriers,
         blockedDistanceMeters: blockedDistanceMeters || undefined,
         anonymousName: anonymousName || undefined,
         anonymousEmail: anonymousEmail || undefined,
@@ -436,6 +439,19 @@ export function ReportIncident() {
                 We need at least one photo with GPS. Enable location for your camera, then retake.
               </div>
             )}
+
+            {/* Bulk upload link */}
+            {!hasPhotos && (
+              <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+                <Link
+                  to="/report/bulk"
+                  className="flex items-center justify-center gap-2 text-sm text-primary-600 dark:text-primary-400 hover:underline"
+                >
+                  <Images className="h-4 w-4" />
+                  Have existing photos? Upload in bulk
+                </Link>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -570,6 +586,24 @@ export function ReportIncident() {
               <Label htmlFor="singleLane" className="text-sm font-normal">
                 Single lane traffic possible
               </Label>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <input
+                type="checkbox"
+                id="safetyBarriers"
+                checked={needsSafetyBarriers}
+                onChange={(e) => setNeedsSafetyBarriers(e.target.checked)}
+                className="w-4 h-4 mt-0.5 rounded border-gray-300"
+              />
+              <div>
+                <Label htmlFor="safetyBarriers" className="text-sm font-normal">
+                  Needs safety barriers
+                </Label>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Road is carefully usable but requires barriers
+                </p>
+              </div>
             </div>
 
             <div className="space-y-2">

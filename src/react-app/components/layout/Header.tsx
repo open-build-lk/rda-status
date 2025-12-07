@@ -12,15 +12,13 @@ import {
   LayoutDashboard,
   FolderKanban,
   Shield,
-  ArrowLeft,
 } from "lucide-react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useAuthStore } from "@/stores/auth";
 import { cn } from "@/lib/utils";
 import {
   Breadcrumb,
   BreadcrumbItem,
-  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
@@ -72,7 +70,6 @@ export function Header() {
   const { user, isInitialized, logout } = useAuthStore();
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
 
   const handleLogout = async () => {
     setMenuOpen(false);
@@ -88,14 +85,7 @@ export function Header() {
   });
 
   const showReportBreadcrumb = location.pathname.startsWith("/report");
-  const handleBack = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (window.history.length > 1) {
-      navigate(-1);
-    } else {
-      navigate("/");
-    }
-  };
+  const isBulkUpload = location.pathname === "/report/bulk";
 
   return (
     <header className="sticky top-0 z-[99] w-full border-b border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:border-gray-800 dark:bg-gray-950/95">
@@ -174,15 +164,34 @@ export function Header() {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
-                  <BreadcrumbLink href="#" onClick={handleBack} className="inline-flex items-center gap-1">
-                    <ArrowLeft className="h-4 w-4" />
-                    Back
-                  </BreadcrumbLink>
+                  <Link
+                    to="/"
+                    className="inline-flex items-center gap-1 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-50"
+                  >
+                    Sri Lanka Road Status
+                  </Link>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Report Incident</BreadcrumbPage>
-                </BreadcrumbItem>
+                {isBulkUpload ? (
+                  <>
+                    <BreadcrumbItem>
+                      <Link
+                        to="/report"
+                        className="inline-flex items-center gap-1 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-50"
+                      >
+                        Report Incident
+                      </Link>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                      <BreadcrumbPage>Bulk Upload</BreadcrumbPage>
+                    </BreadcrumbItem>
+                  </>
+                ) : (
+                  <BreadcrumbItem>
+                    <BreadcrumbPage>Report Incident</BreadcrumbPage>
+                  </BreadcrumbItem>
+                )}
               </BreadcrumbList>
             </Breadcrumb>
           </div>

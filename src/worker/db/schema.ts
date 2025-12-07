@@ -97,7 +97,10 @@ export const damageReports = sqliteTable(
     // Citizen report fields
     passabilityLevel: text("passability_level"), // unpassable, foot, bike, 3wheeler, car, bus, truck
     isSingleLane: integer("is_single_lane", { mode: "boolean" }).default(false),
+    needsSafetyBarriers: integer("needs_safety_barriers", { mode: "boolean" }).default(false),
     blockedDistanceMeters: real("blocked_distance_meters"),
+    // Flexible JSON for additional incident details (future-proof)
+    incidentDetails: text("incident_details"), // JSON: { alternativeRoutes, estimatedRepairTime, hazardType, etc. }
     submissionSource: text("submission_source"), // citizen_web, citizen_mobile, official
     isVerifiedSubmitter: integer("is_verified_submitter", { mode: "boolean" }).default(false),
     claimToken: text("claim_token"), // For anonymous users to claim reports later

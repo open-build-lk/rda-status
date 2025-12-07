@@ -13,6 +13,7 @@ import {
   AdminReports,
   AdminUsers,
   AcceptInvitation,
+  BulkUpload,
 } from "@/pages";
 
 function AppContent() {
@@ -67,6 +68,14 @@ function AppContent() {
           element={
             <ProtectedRoute allowedRoles={["super_admin"]}>
               <AdminUsers />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/report/bulk"
+          element={
+            <ProtectedRoute allowedRoles={["citizen", "field_officer", "planner", "admin", "super_admin"]}>
+              <BulkUpload />
             </ProtectedRoute>
           }
         />

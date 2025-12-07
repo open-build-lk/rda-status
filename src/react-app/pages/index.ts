@@ -9,3 +9,4 @@ export { ReportVerified } from "./ReportVerified";
 export { AdminReports } from "./AdminReports";
 export { AdminUsers } from "./AdminUsers";
 export { AcceptInvitation } from "./AcceptInvitation";
+export { BulkUpload } from "./BulkUpload";

@@ -195,6 +195,8 @@ mapRoutes.get("/incidents", async (c) => {
       damageType: damageReports.damageType,
       passabilityLevel: damageReports.passabilityLevel,
       isSingleLane: damageReports.isSingleLane,
+      needsSafetyBarriers: damageReports.needsSafetyBarriers,
+      incidentDetails: damageReports.incidentDetails,
       description: damageReports.description,
       createdAt: damageReports.createdAt,
       reportNumber: damageReports.reportNumber,

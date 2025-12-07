@@ -159,8 +159,12 @@ const createReportSchema = z.object({
   passabilityLevel: z
     .enum(["unpassable", "foot", "bike", "3wheeler", "car", "bus", "truck"])
     .optional(),
+  // Legacy fields (kept for backward compatibility)
   isSingleLane: z.boolean().optional(),
+  needsSafetyBarriers: z.boolean().optional(),
   blockedDistanceMeters: z.number().min(0).max(10000).optional(),
+  // Flexible incident details (new way - any additional fields go here)
+  incidentDetails: z.record(z.unknown()).optional(),
   mediaKeys: z.array(z.string()).max(5).optional(), // R2 storage keys for uploaded photos
 });
 
@@ -225,7 +229,15 @@ reportsRoutes.post(
       status: "new",
       passabilityLevel: data.passabilityLevel || "unpassable",
       isSingleLane: data.isSingleLane || false,
+      needsSafetyBarriers: data.needsSafetyBarriers || false,
       blockedDistanceMeters: data.blockedDistanceMeters || null,
+      // Store all incident details as JSON (includes legacy + new fields)
+      incidentDetails: JSON.stringify({
+        isSingleLane: data.isSingleLane || false,
+        needsSafetyBarriers: data.needsSafetyBarriers || false,
+        blockedDistanceMeters: data.blockedDistanceMeters || null,
+        ...data.incidentDetails,
+      }),
       submissionSource: "citizen_mobile",
       isVerifiedSubmitter: !!auth,
       claimToken,
@@ -312,6 +324,8 @@ reportsRoutes.get("/area", async (c) => {
       description: damageReports.description,
       passabilityLevel: damageReports.passabilityLevel,
       isSingleLane: damageReports.isSingleLane,
+      needsSafetyBarriers: damageReports.needsSafetyBarriers,
+      incidentDetails: damageReports.incidentDetails,
       createdAt: damageReports.createdAt,
     })
     .from(damageReports)
