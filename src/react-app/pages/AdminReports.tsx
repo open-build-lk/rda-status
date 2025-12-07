@@ -58,7 +58,17 @@ import {
   Phone,
   Calendar,
   Image as ImageIcon,
+  LayoutGrid,
+  LayoutList,
+  Check,
+  X,
 } from "lucide-react";
+import { ReportCard } from "@/components/admin/ReportCard";
+import { RejectReasonSheet } from "@/components/admin/RejectReasonSheet";
+import { UpdateProgressSheet } from "@/components/admin/UpdateProgressSheet";
+import { StatusSummary } from "@/components/admin/StatusSummary";
+import { provinces } from "@/data/sriLankaLocations";
+import { useAuthStore } from "@/stores/auth";
 
 interface MediaAttachment {
   id: string;
@@ -88,6 +98,7 @@ interface Report {
   anonymousContact: string | null;
   isVerifiedSubmitter: boolean | number;
   sourceType: string;
+  workflowData: string | null; // JSON string
   createdAt: string;
   updatedAt: string;
   provinceId: string | null;
@@ -95,6 +106,7 @@ interface Report {
   provinceName: string | null;
   districtName: string | null;
   roadLocation: string | null;
+  mediaCount?: number;
 }
 
 interface ReportWithMedia extends Report {
@@ -143,6 +155,8 @@ const passabilityOptions = [
 const columnHelper = createColumnHelper<Report>();
 
 export function AdminReports() {
+  const { user } = useAuthStore();
+  const userRole = user?.role || "citizen";
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -152,10 +166,36 @@ export function AdminReports() {
   const [editingReport, setEditingReport] = useState<Report | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // View mode: cards (mobile) or table (desktop)
+  const [viewMode, setViewMode] = useState<"cards" | "table">(() => {
+    // Default to cards on mobile
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
+      return "cards";
+    }
+    return localStorage.getItem("adminReportsView") as "cards" | "table" || "cards";
+  });
+
+  // District filter
+  const [selectedProvince, setSelectedProvince] = useState<string>("");
+  const [selectedDistrict, setSelectedDistrict] = useState<string>("");
+  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+
+  // Rejection sheet
+  const [rejectingReport, setRejectingReport] = useState<Report | null>(null);
+  const [updatingReportId, setUpdatingReportId] = useState<string | null>(null);
+
+  // Progress update sheet
+  const [progressReport, setProgressReport] = useState<Report | null>(null);
+
   // Drawer state for viewing report details
   const [selectedReport, setSelectedReport] = useState<ReportWithMedia | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(false);
+
+  // Save view preference
+  useEffect(() => {
+    localStorage.setItem("adminReportsView", viewMode);
+  }, [viewMode]);
 
   const fetchReports = async () => {
     setLoading(true);
@@ -179,6 +219,65 @@ export function AdminReports() {
   useEffect(() => {
     fetchReports();
   }, []);
+
+  // Calculate status counts
+  const statusCounts = useMemo(() => {
+    const counts = { new: 0, verified: 0, in_progress: 0, resolved: 0, rejected: 0 };
+    const filteredByLocation = reports.filter((r) => {
+      if (selectedProvince && r.provinceName?.toLowerCase() !== selectedProvince.toLowerCase()) {
+        return false;
+      }
+      if (selectedDistrict && r.districtName?.toLowerCase() !== selectedDistrict.toLowerCase()) {
+        return false;
+      }
+      return true;
+    });
+    filteredByLocation.forEach((r) => {
+      if (r.status in counts) {
+        counts[r.status as keyof typeof counts]++;
+      }
+    });
+    return counts;
+  }, [reports, selectedProvince, selectedDistrict]);
+
+  // Filter reports for card view
+  const filteredReports = useMemo(() => {
+    return reports.filter((r) => {
+      // Province filter
+      if (selectedProvince && r.provinceName?.toLowerCase() !== selectedProvince.toLowerCase()) {
+        return false;
+      }
+      // District filter
+      if (selectedDistrict && r.districtName?.toLowerCase() !== selectedDistrict.toLowerCase()) {
+        return false;
+      }
+      // Status filter
+      if (selectedStatus && r.status !== selectedStatus) {
+        return false;
+      }
+      // Global search
+      if (globalFilter) {
+        const search = globalFilter.toLowerCase();
+        return (
+          r.reportNumber.toLowerCase().includes(search) ||
+          r.description?.toLowerCase().includes(search) ||
+          r.damageType.toLowerCase().includes(search) ||
+          r.locationName?.toLowerCase().includes(search) ||
+          r.roadLocation?.toLowerCase().includes(search)
+        );
+      }
+      return true;
+    });
+  }, [reports, selectedProvince, selectedDistrict, selectedStatus, globalFilter]);
+
+  // Get districts for selected province
+  const availableDistricts = useMemo(() => {
+    if (!selectedProvince) return [];
+    const province = provinces.find(
+      (p) => p.name.toLowerCase() === selectedProvince.toLowerCase()
+    );
+    return province?.districts || [];
+  }, [selectedProvince]);
 
   const fetchReportDetails = async (id: string) => {
     setLoadingDetails(true);
@@ -213,6 +312,7 @@ export function AdminReports() {
   };
 
   const handleQuickStatusChange = async (id: string, newStatus: string) => {
+    setUpdatingReportId(id);
     try {
       await updateReport(id, { status: newStatus });
       setReports((prev) =>
@@ -220,6 +320,79 @@ export function AdminReports() {
       );
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to update");
+    } finally {
+      setUpdatingReportId(null);
+    }
+  };
+
+  const handleVerify = (id: string) => handleQuickStatusChange(id, "verified");
+  const handleMarkInProgress = (id: string) => handleQuickStatusChange(id, "in_progress");
+  const handleResolve = (id: string) => handleQuickStatusChange(id, "resolved");
+  const handleReopen = (id: string) => handleQuickStatusChange(id, "new");
+
+  const handleReject = (id: string) => {
+    const report = reports.find((r) => r.id === id);
+    if (report) {
+      setRejectingReport(report);
+    }
+  };
+
+  const handleConfirmReject = async (_reason: string) => {
+    void _reason; // Will be used when stateTransitions storage is implemented
+    if (!rejectingReport) return;
+    setUpdatingReportId(rejectingReport.id);
+    try {
+      // TODO: Store rejection reason in stateTransitions
+      await updateReport(rejectingReport.id, { status: "rejected" });
+      setReports((prev) =>
+        prev.map((r) => (r.id === rejectingReport.id ? { ...r, status: "rejected" } : r))
+      );
+      setRejectingReport(null);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to reject");
+      throw err; // Re-throw so the sheet knows it failed
+    } finally {
+      setUpdatingReportId(null);
+    }
+  };
+
+  const handleUpdateProgress = (id: string) => {
+    const report = reports.find((r) => r.id === id);
+    if (report) {
+      setProgressReport(report);
+    }
+  };
+
+  const handleConfirmProgress = async (progress: number, cost: number | null) => {
+    if (!progressReport) return;
+    setUpdatingReportId(progressReport.id);
+    try {
+      const workflowData = { progressPercent: progress, estimatedCostLkr: cost };
+      // API expects workflowData as object, use direct fetch
+      const response = await fetch(`/api/v1/admin/reports/${progressReport.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ workflowData }),
+      });
+      if (!response.ok) {
+        const errData = await response.json() as { error?: string };
+        throw new Error(errData.error || "Failed to update progress");
+      }
+      // Update local state
+      setReports((prev) =>
+        prev.map((r) =>
+          r.id === progressReport.id
+            ? { ...r, workflowData: JSON.stringify(workflowData) }
+            : r
+        )
+      );
+      setProgressReport(null);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to update progress");
+      throw err;
+    } finally {
+      setUpdatingReportId(null);
     }
   };
 
@@ -227,6 +400,11 @@ export function AdminReports() {
     if (!editingReport) return;
     setSaving(true);
     try {
+      // Parse workflowData if it's a string (API expects object)
+      const workflowData = editingReport.workflowData
+        ? JSON.parse(editingReport.workflowData)
+        : undefined;
+
       await updateReport(editingReport.id, {
         status: editingReport.status,
         damageType: editingReport.damageType,
@@ -237,6 +415,7 @@ export function AdminReports() {
         anonymousEmail: editingReport.anonymousEmail,
         anonymousContact: editingReport.anonymousContact,
         isVerifiedSubmitter: Boolean(editingReport.isVerifiedSubmitter),
+        workflowData,
       });
       setReports((prev) =>
         prev.map((r) => (r.id === editingReport.id ? editingReport : r))
@@ -288,74 +467,51 @@ export function AdminReports() {
         header: "Status",
         cell: (info) => {
           const status = info.getValue();
+          const reportId = info.row.original.id;
           return (
-            <Select
-              value={status}
-              onValueChange={(value: string) =>
-                handleQuickStatusChange(info.row.original.id, value)
-              }
-            >
-              <SelectTrigger className="w-[130px] h-8 text-xs">
-                <span
-                  className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs ${
-                    statusColors[status] || statusColors.new
-                  }`}
-                >
-                  {statusIcons[status]}
-                  {status.replace("_", " ")}
-                </span>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="new">New</SelectItem>
-                <SelectItem value="verified">Verified</SelectItem>
-                <SelectItem value="in_progress">In Progress</SelectItem>
-                <SelectItem value="resolved">Resolved</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-1">
+              <span
+                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs ${
+                  statusColors[status] || statusColors.new
+                }`}
+              >
+                {statusIcons[status]}
+                {status.replace("_", " ")}
+              </span>
+              {status === "new" && (
+                <div className="flex gap-0.5 ml-1">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 w-6 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleVerify(reportId);
+                    }}
+                    disabled={updatingReportId === reportId}
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleReject(reportId);
+                    }}
+                    disabled={updatingReportId === reportId}
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              )}
+            </div>
           );
         },
         filterFn: (row, id, value) => {
           if (value === "all") return true;
           return row.getValue(id) === value;
-        },
-      }),
-      columnHelper.accessor("passabilityLevel", {
-        header: "Passability",
-        cell: (info) => {
-          const value = info.getValue();
-          return value ? (
-            <span className="text-sm">{value}</span>
-          ) : (
-            <span className="text-gray-400 text-sm">-</span>
-          );
-        },
-      }),
-      columnHelper.accessor("description", {
-        header: "Description",
-        cell: (info) => (
-          <span className="text-sm line-clamp-2 max-w-[200px]">
-            {info.getValue()}
-          </span>
-        ),
-      }),
-      columnHelper.accessor("sourceType", {
-        header: "Source",
-        cell: (info) => (
-          <span className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
-            {info.getValue()}
-          </span>
-        ),
-      }),
-      columnHelper.accessor("provinceName", {
-        header: "Province",
-        cell: (info) => {
-          const value = info.getValue();
-          return value ? (
-            <span className="text-sm">{value}</span>
-          ) : (
-            <span className="text-gray-400 text-sm">-</span>
-          );
         },
       }),
       columnHelper.accessor("districtName", {
@@ -370,11 +526,11 @@ export function AdminReports() {
         },
       }),
       columnHelper.accessor("roadLocation", {
-        header: "Road/Location",
+        header: "Location",
         cell: (info) => {
           const value = info.getValue();
           return value ? (
-            <span className="text-sm max-w-[200px] truncate block" title={value}>
+            <span className="text-sm max-w-[150px] truncate block" title={value}>
               {value}
             </span>
           ) : (
@@ -390,6 +546,7 @@ export function AdminReports() {
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-primary-600 hover:underline text-sm"
+            onClick={(e) => e.stopPropagation()}
           >
             <MapPin className="w-3 h-3" />
             View
@@ -411,18 +568,21 @@ export function AdminReports() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setEditingReport({ ...info.row.original })}
+            onClick={(e) => {
+              e.stopPropagation();
+              setEditingReport({ ...info.row.original });
+            }}
           >
             <Pencil className="w-4 h-4" />
           </Button>
         ),
       }),
     ],
-    []
+    [updatingReportId]
   );
 
   const table = useReactTable({
-    data: reports,
+    data: filteredReports,
     columns,
     state: {
       sorting,
@@ -468,142 +628,256 @@ export function AdminReports() {
   return (
     <div className="p-4 space-y-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold">All Reports</h1>
-        <div className="flex items-center gap-2">
-          <Input
-            placeholder="Search..."
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            className="w-[200px]"
-          />
-          <Select
-            value={(table.getColumn("status")?.getFilterValue() as string) || "all"}
-            onValueChange={(value: string) =>
-              table.getColumn("status")?.setFilterValue(value === "all" ? undefined : value)
-            }
-          >
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="All Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="new">New</SelectItem>
-              <SelectItem value="verified">Verified</SelectItem>
-              <SelectItem value="in_progress">In Progress</SelectItem>
-              <SelectItem value="resolved">Resolved</SelectItem>
-              <SelectItem value="rejected">Rejected</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button onClick={fetchReports} variant="outline" size="icon">
-            <RefreshCw className="w-4 h-4" />
-          </Button>
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Citizen Reports</h1>
+          <div className="flex items-center gap-2">
+            {/* View toggle */}
+            <div className="hidden sm:flex items-center border rounded-lg p-0.5">
+              <Button
+                variant={viewMode === "cards" ? "default" : "ghost"}
+                size="sm"
+                className="h-8 px-2"
+                onClick={() => setViewMode("cards")}
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </Button>
+              <Button
+                variant={viewMode === "table" ? "default" : "ghost"}
+                size="sm"
+                className="h-8 px-2"
+                onClick={() => setViewMode("table")}
+              >
+                <LayoutList className="w-4 h-4" />
+              </Button>
+            </div>
+            <Button onClick={fetchReports} variant="outline" size="icon">
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
+
+        {/* Filters row */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex gap-2 flex-1">
+            {/* Province filter */}
+            <Select
+              value={selectedProvince}
+              onValueChange={(value) => {
+                setSelectedProvince(value === "all" ? "" : value);
+                setSelectedDistrict("");
+              }}
+            >
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Province" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Provinces</SelectItem>
+                {provinces.map((p) => (
+                  <SelectItem key={p.id} value={p.name}>
+                    {p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* District filter */}
+            {selectedProvince && (
+              <Select
+                value={selectedDistrict}
+                onValueChange={(value) => setSelectedDistrict(value === "all" ? "" : value)}
+              >
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="District" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Districts</SelectItem>
+                  {availableDistricts.map((d) => (
+                    <SelectItem key={d.id} value={d.name}>
+                      {d.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            {/* Search */}
+            <Input
+              placeholder="Search..."
+              value={globalFilter}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+              className="flex-1 max-w-[200px]"
+            />
+          </div>
+        </div>
+
+        {/* Status summary */}
+        <StatusSummary
+          counts={statusCounts}
+          selectedStatus={selectedStatus}
+          onStatusClick={setSelectedStatus}
+        />
       </div>
 
       {/* Stats */}
       <div className="text-sm text-gray-500">
-        Showing {table.getRowModel().rows.length} of {reports.length} reports
+        Showing {filteredReports.length} of {reports.length} reports
       </div>
 
-      {/* Table */}
-      <div className="border rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-gray-800">
-              {table.getHeaderGroups().map((headerGroup) => (
-                <tr key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <th
-                      key={header.id}
-                      className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+      {/* Card View (Mobile-first) */}
+      {viewMode === "cards" && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredReports.map((report) => (
+            <ReportCard
+              key={report.id}
+              report={report}
+              userRole={userRole}
+              onVerify={handleVerify}
+              onReject={handleReject}
+              onMarkInProgress={handleMarkInProgress}
+              onResolve={handleResolve}
+              onReopen={handleReopen}
+              onUpdateProgress={handleUpdateProgress}
+              onViewDetails={fetchReportDetails}
+              isUpdating={updatingReportId === report.id}
+            />
+          ))}
+          {filteredReports.length === 0 && (
+            <div className="col-span-full text-center py-12 text-gray-500">
+              No reports found matching your filters
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Table View (Desktop) */}
+      {viewMode === "table" && (
+        <>
+          <div className="border rounded-lg overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 dark:bg-gray-800">
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <tr key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => (
+                        <th
+                          key={header.id}
+                          className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          {header.isPlaceholder ? null : (
+                            <div
+                              className={
+                                header.column.getCanSort()
+                                  ? "flex items-center gap-1 cursor-pointer select-none hover:text-gray-700"
+                                  : ""
+                              }
+                              onClick={header.column.getToggleSortingHandler()}
+                            >
+                              {flexRender(
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )}
+                              {header.column.getCanSort() && (
+                                <span className="text-gray-400">
+                                  {{
+                                    asc: <ChevronUp className="w-4 h-4" />,
+                                    desc: <ChevronDown className="w-4 h-4" />,
+                                  }[header.column.getIsSorted() as string] ?? (
+                                    <ChevronsUpDown className="w-4 h-4" />
+                                  )}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </th>
+                      ))}
+                    </tr>
+                  ))}
+                </thead>
+                <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                  {table.getRowModel().rows.map((row) => (
+                    <tr
+                      key={row.id}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+                      onClick={() => fetchReportDetails(row.original.id)}
                     >
-                      {header.isPlaceholder ? null : (
-                        <div
-                          className={
-                            header.column.getCanSort()
-                              ? "flex items-center gap-1 cursor-pointer select-none hover:text-gray-700"
-                              : ""
-                          }
-                          onClick={header.column.getToggleSortingHandler()}
+                      {row.getVisibleCells().map((cell) => (
+                        <td
+                          key={cell.id}
+                          className="px-4 py-3 whitespace-nowrap"
+                          onClick={(e) => {
+                            // Prevent row click when clicking on interactive elements
+                            if ((e.target as HTMLElement).closest('button, select, a')) {
+                              e.stopPropagation();
+                            }
+                          }}
                         >
                           {flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
+                            cell.column.columnDef.cell,
+                            cell.getContext()
                           )}
-                          {header.column.getCanSort() && (
-                            <span className="text-gray-400">
-                              {{
-                                asc: <ChevronUp className="w-4 h-4" />,
-                                desc: <ChevronDown className="w-4 h-4" />,
-                              }[header.column.getIsSorted() as string] ?? (
-                                <ChevronsUpDown className="w-4 h-4" />
-                              )}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </th>
+                        </td>
+                      ))}
+                    </tr>
                   ))}
-                </tr>
-              ))}
-            </thead>
-            <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-              {table.getRowModel().rows.map((row) => (
-                <tr
-                  key={row.id}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
-                  onClick={() => fetchReportDetails(row.original.id)}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <td
-                      key={cell.id}
-                      className="px-4 py-3 whitespace-nowrap"
-                      onClick={(e) => {
-                        // Prevent row click when clicking on interactive elements
-                        if ((e.target as HTMLElement).closest('button, select, a')) {
-                          e.stopPropagation();
-                        }
-                      }}
-                    >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-      {/* Pagination */}
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-gray-500">
-          Page {table.getState().pagination.pageIndex + 1} of{" "}
-          {table.getPageCount()}
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            <ChevronRight className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
+          {/* Pagination */}
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-gray-500">
+              Page {table.getState().pagination.pageIndex + 1} of{" "}
+              {table.getPageCount()}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Rejection Reason Sheet */}
+      <RejectReasonSheet
+        open={!!rejectingReport}
+        onOpenChange={(open) => !open && setRejectingReport(null)}
+        reportNumber={rejectingReport?.reportNumber || ""}
+        onConfirmReject={handleConfirmReject}
+      />
+
+      {/* Update Progress Sheet */}
+      <UpdateProgressSheet
+        open={!!progressReport}
+        onOpenChange={(open) => !open && setProgressReport(null)}
+        reportNumber={progressReport?.reportNumber || ""}
+        currentProgress={(() => {
+          if (!progressReport?.workflowData) return 0;
+          const workflow = JSON.parse(progressReport.workflowData);
+          return workflow.progressPercent ?? 0;
+        })()}
+        currentCost={(() => {
+          if (!progressReport?.workflowData) return null;
+          const workflow = JSON.parse(progressReport.workflowData);
+          return workflow.estimatedCostLkr ?? null;
+        })()}
+        onConfirm={handleConfirmProgress}
+      />
 
       {/* Edit Dialog */}
       <Dialog open={!!editingReport} onOpenChange={() => setEditingReport(null)}>
@@ -720,6 +994,67 @@ export function AdminReports() {
                   }
                   rows={3}
                 />
+              </div>
+
+              <div className="border-t pt-4 mt-2">
+                <h4 className="font-medium mb-3">Work Progress</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Progress (%)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      placeholder="0"
+                      value={(() => {
+                        const workflow = editingReport.workflowData
+                          ? JSON.parse(editingReport.workflowData)
+                          : {};
+                        return workflow.progressPercent ?? "";
+                      })()}
+                      onChange={(e) => {
+                        const workflow = editingReport.workflowData
+                          ? JSON.parse(editingReport.workflowData)
+                          : {};
+                        const value = e.target.value === "" ? 0 : Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                        setEditingReport({
+                          ...editingReport,
+                          workflowData: JSON.stringify({
+                            ...workflow,
+                            progressPercent: value,
+                          }),
+                        });
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Est. Cost (LKR)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      placeholder="e.g. 1500000"
+                      value={(() => {
+                        const workflow = editingReport.workflowData
+                          ? JSON.parse(editingReport.workflowData)
+                          : {};
+                        return workflow.estimatedCostLkr ?? "";
+                      })()}
+                      onChange={(e) => {
+                        const workflow = editingReport.workflowData
+                          ? JSON.parse(editingReport.workflowData)
+                          : {};
+                        const value = e.target.value === "" ? null : Math.max(0, parseInt(e.target.value) || 0);
+                        setEditingReport({
+                          ...editingReport,
+                          workflowData: JSON.stringify({
+                            ...workflow,
+                            estimatedCostLkr: value,
+                          }),
+                        });
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="border-t pt-4 mt-2">

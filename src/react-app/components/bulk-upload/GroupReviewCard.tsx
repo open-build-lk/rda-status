@@ -94,15 +94,37 @@ export function GroupReviewCard({
             onUpdateRef.current({ locationName: parts.join(", ") });
           }
 
-          // Try to detect district
-          const districtName = addr.county || addr.state_district || addr.city;
-          if (districtName && detected) {
+          // Try to detect district from multiple address fields
+          if (detected) {
             const districts = getDistrictsForProvince(detected.id);
-            const matchedDistrict = districts.find(
-              (d) => d.name.toLowerCase() === districtName.toLowerCase()
-            );
-            if (matchedDistrict) {
-              onUpdateRef.current({ district: matchedDistrict.id });
+            const possibleDistrictNames = [
+              addr.county,
+              addr.state_district,
+              addr.city,
+              addr.town,
+            ].filter((n): n is string => !!n);
+
+            for (const rawName of possibleDistrictNames) {
+              // Normalize: remove "District" suffix and extra whitespace
+              const normalized = rawName
+                .toLowerCase()
+                .replace(/\s*district\s*/gi, "")
+                .trim();
+              
+              // Try flexible matching
+              const matchedDistrict = districts.find((d) => {
+                const dName = d.name.toLowerCase();
+                return (
+                  dName === normalized ||
+                  dName.includes(normalized) ||
+                  normalized.includes(dName)
+                );
+              });
+
+              if (matchedDistrict) {
+                onUpdateRef.current({ district: matchedDistrict.id });
+                break;
+              }
             }
           }
         }

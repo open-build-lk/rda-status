@@ -80,3 +80,85 @@ export const SEVERITY_LABELS = {
   3: "High",
   4: "Critical",
 } as const;
+
+// Report statuses
+export const REPORT_STATUSES = [
+  "new",
+  "verified",
+  "in_progress",
+  "resolved",
+  "rejected",
+] as const;
+
+export type ReportStatusType = typeof REPORT_STATUSES[number];
+
+// Role types for status transitions
+export type UserRoleType =
+  | "citizen"
+  | "field_officer"
+  | "planner"
+  | "admin"
+  | "super_admin"
+  | "stakeholder";
+
+// Status transition rules per role
+// Maps: role -> current_status -> allowed_next_statuses
+export const STATUS_TRANSITIONS: Record<string, Record<string, readonly string[]>> = {
+  field_officer: {
+    new: ["verified", "rejected"],
+    verified: ["in_progress"],
+    in_progress: ["resolved", "verified"], // Can revert if needed
+    resolved: [],
+    rejected: [],
+  },
+  planner: {
+    new: ["verified", "rejected"],
+    verified: ["in_progress"],
+    in_progress: ["resolved", "verified"],
+    resolved: ["in_progress"], // Can reopen
+    rejected: ["new"], // Can re-review
+  },
+  admin: {
+    new: ["verified", "rejected", "in_progress"],
+    verified: ["in_progress", "rejected", "new"],
+    in_progress: ["resolved", "verified", "rejected"],
+    resolved: ["in_progress", "verified"],
+    rejected: ["new", "verified"],
+  },
+  super_admin: {
+    // Super admin can do all transitions
+    new: ["verified", "rejected", "in_progress", "resolved"],
+    verified: ["new", "rejected", "in_progress", "resolved"],
+    in_progress: ["new", "verified", "rejected", "resolved"],
+    resolved: ["new", "verified", "in_progress", "rejected"],
+    rejected: ["new", "verified", "in_progress", "resolved"],
+  },
+} as const;
+
+// Get allowed transitions for a role and current status
+export function getAllowedTransitions(
+  role: string,
+  currentStatus: string
+): readonly string[] {
+  // Citizens and stakeholders cannot change status
+  if (role === "citizen" || role === "stakeholder") {
+    return [];
+  }
+
+  const roleTransitions = STATUS_TRANSITIONS[role];
+  if (!roleTransitions) {
+    return [];
+  }
+
+  return roleTransitions[currentStatus] || [];
+}
+
+// Check if a transition is valid
+export function isValidTransition(
+  role: string,
+  currentStatus: string,
+  newStatus: string
+): boolean {
+  const allowed = getAllowedTransitions(role, currentStatus);
+  return allowed.includes(newStatus);
+}
