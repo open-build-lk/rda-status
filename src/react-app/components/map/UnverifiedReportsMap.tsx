@@ -108,7 +108,7 @@ export function UnverifiedReportsMap({ onReportSelect, selectedReportId }: Unver
       if (!response.ok) {
         throw new Error("Failed to fetch unverified reports");
       }
-      const data = await response.json();
+      const data = (await response.json()) as UnverifiedReport[];
       setReports(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load reports");
