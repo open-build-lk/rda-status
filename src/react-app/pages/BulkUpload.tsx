@@ -94,6 +94,15 @@ export function BulkUpload() {
       try {
         updateUploadProgress(incident.groupId, 10);
 
+        // Check if photos have valid file data (may be missing after page refresh)
+        const invalidPhotos = incident.photos.filter((p) => !p.file || !(p.file instanceof Blob));
+        if (invalidPhotos.length > 0) {
+          throw new Error(
+            "Photo data expired. Please go back and re-add your photos. " +
+            "(This happens when the page is refreshed after adding photos.)"
+          );
+        }
+
         // Step 1: Upload photos in batches of 5 (API limit)
         const BATCH_SIZE = 5;
         const allKeys: string[] = [];
@@ -103,7 +112,7 @@ export function BulkUpload() {
           const batch = incident.photos.slice(i, i + BATCH_SIZE);
           const formData = new FormData();
           for (const photo of batch) {
-            formData.append("photos", photo.file, `photo-${photo.id}.jpg`);
+            formData.append("photos", photo.file!, `photo-${photo.id}.jpg`);
           }
 
           const uploadResponse = await fetch("/api/v1/upload/photos", {
@@ -132,13 +141,10 @@ export function BulkUpload() {
         const reportPayload = {
           latitude: incident.centroid.latitude,
           longitude: incident.centroid.longitude,
-          provinceId: incident.province || undefined,
-          districtId: incident.district || undefined,
+          province: incident.province || undefined,
+          district: incident.district || undefined,
           locationName: incident.locationName || undefined,
           damageType: incident.damageType,
-          damageObservedAt: incident.incidentDate
-            ? new Date(incident.incidentDate).toISOString()
-            : undefined,
           passabilityLevel: incident.passabilityLevel || undefined,
           // Legacy fields for backward compatibility
           isSingleLane: incident.incidentDetails.isSingleLane || false,
@@ -148,8 +154,6 @@ export function BulkUpload() {
           incidentDetails: incident.incidentDetails,
           description: incident.description || undefined,
           mediaKeys: uploadedKeys,
-          sourceChannel: "bulk_upload",
-          sourceType,
         };
 
         const reportResponse = await fetch("/api/v1/reports", {
@@ -160,7 +164,8 @@ export function BulkUpload() {
         });
 
         if (!reportResponse.ok) {
-          throw new Error("Report creation failed");
+          const errorData = await reportResponse.json().catch(() => ({}));
+          throw new Error((errorData as { error?: string }).error || `Report creation failed (${reportResponse.status})`);
         }
 
         const report = (await reportResponse.json()) as { id: string; reportNumber: string };
@@ -215,6 +220,15 @@ export function BulkUpload() {
         try {
           updateUploadProgress(incident.groupId, 10);
 
+          // Check if photos have valid file data (may be missing after page refresh)
+          const invalidPhotos = incident.photos.filter((p) => !p.file || !(p.file instanceof Blob));
+          if (invalidPhotos.length > 0) {
+            throw new Error(
+              "Photo data expired. Please go back and re-add your photos. " +
+              "(This happens when the page is refreshed after adding photos.)"
+            );
+          }
+
           // Upload photos in batches of 5 (API limit)
           const BATCH_SIZE = 5;
           const allKeys: string[] = [];
@@ -224,7 +238,7 @@ export function BulkUpload() {
             const batch = incident.photos.slice(i, i + BATCH_SIZE);
             const formData = new FormData();
             for (const photo of batch) {
-              formData.append("photos", photo.file, `photo-${photo.id}.jpg`);
+              formData.append("photos", photo.file!, `photo-${photo.id}.jpg`);
             }
 
             const uploadResponse = await fetch("/api/v1/upload/photos", {
@@ -250,13 +264,10 @@ export function BulkUpload() {
           const reportPayload = {
             latitude: incident.centroid.latitude,
             longitude: incident.centroid.longitude,
-            provinceId: incident.province || undefined,
-            districtId: incident.district || undefined,
+            province: incident.province || undefined,
+            district: incident.district || undefined,
             locationName: incident.locationName || undefined,
             damageType: incident.damageType,
-            damageObservedAt: incident.incidentDate
-              ? new Date(incident.incidentDate).toISOString()
-              : undefined,
             passabilityLevel: incident.passabilityLevel || undefined,
             // Legacy fields for backward compatibility
             isSingleLane: incident.incidentDetails.isSingleLane || false,
@@ -266,8 +277,6 @@ export function BulkUpload() {
             incidentDetails: incident.incidentDetails,
             description: incident.description || undefined,
             mediaKeys: allKeys,
-            sourceChannel: "bulk_upload",
-            sourceType,
           };
 
           const reportResponse = await fetch("/api/v1/reports", {
@@ -277,7 +286,10 @@ export function BulkUpload() {
             credentials: "include",
           });
 
-          if (!reportResponse.ok) throw new Error("Report creation failed");
+          if (!reportResponse.ok) {
+            const errorData = await reportResponse.json().catch(() => ({}));
+            throw new Error((errorData as { error?: string }).error || `Report creation failed (${reportResponse.status})`);
+          }
 
           const report = (await reportResponse.json()) as { id: string; reportNumber: string };
           updateUploadProgress(incident.groupId, 100);

@@ -165,7 +165,7 @@ const createReportSchema = z.object({
   blockedDistanceMeters: z.number().min(0).max(10000).optional(),
   // Flexible incident details (new way - any additional fields go here)
   incidentDetails: z.record(z.unknown()).optional(),
-  mediaKeys: z.array(z.string()).max(5).optional(), // R2 storage keys for uploaded photos
+  mediaKeys: z.array(z.string()).max(20).optional(), // R2 storage keys for uploaded photos
 });
 
 const claimReportSchema = z.object({
