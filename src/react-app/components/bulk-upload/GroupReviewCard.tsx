@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { MapPin, ChevronDown, ChevronUp, Check, ExternalLink, Calendar } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,6 +40,11 @@ export function GroupReviewCard({
 }: GroupReviewCardProps) {
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
 
+  // Store onUpdate in a ref to avoid re-running effects when the callback changes
+  // (since it's an inline function in the parent that gets recreated every render)
+  const onUpdateRef = useRef(onUpdate);
+  onUpdateRef.current = onUpdate;
+
   // Auto-detect province and fetch location name on mount
   useEffect(() => {
     if (incident.province || incident.locationName) return;
@@ -51,7 +56,7 @@ export function GroupReviewCard({
       incident.centroid.longitude
     );
     if (detected) {
-      onUpdate({ province: detected.id });
+      onUpdateRef.current({ province: detected.id });
     }
 
     // Fetch reverse geocoding
@@ -86,7 +91,7 @@ export function GroupReviewCard({
             addr.neighbourhood || addr.suburb || addr.village || addr.town;
           if (area && !parts.includes(area)) parts.push(area);
           if (parts.length > 0) {
-            onUpdate({ locationName: parts.join(", ") });
+            onUpdateRef.current({ locationName: parts.join(", ") });
           }
 
           // Try to detect district
@@ -97,14 +102,14 @@ export function GroupReviewCard({
               (d) => d.name.toLowerCase() === districtName.toLowerCase()
             );
             if (matchedDistrict) {
-              onUpdate({ district: matchedDistrict.id });
+              onUpdateRef.current({ district: matchedDistrict.id });
             }
           }
         }
       })
       .catch((err) => console.error("Reverse geocoding failed:", err))
       .finally(() => setIsLoadingLocation(false));
-  }, [incident.centroid, incident.province, incident.locationName, onUpdate]);
+  }, [incident.centroid, incident.province, incident.locationName]);
 
   // Check if incident has minimum required fields
   const isComplete = !!(
@@ -115,9 +120,9 @@ export function GroupReviewCard({
 
   useEffect(() => {
     if (isComplete !== incident.isComplete) {
-      onUpdate({ isComplete });
+      onUpdateRef.current({ isComplete });
     }
-  }, [isComplete, incident.isComplete, onUpdate]);
+  }, [isComplete, incident.isComplete]);
 
   return (
     <Card className="overflow-hidden">
@@ -304,20 +309,52 @@ export function GroupReviewCard({
               onChange={(level) => onUpdate({ passabilityLevel: level })}
             />
 
-            <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                id={`singleLane-${incident.groupId}`}
-                checked={incident.isSingleLane}
-                onChange={(e) => onUpdate({ isSingleLane: e.target.checked })}
-                className="h-5 w-5 rounded border-gray-300"
-              />
-              <Label
-                htmlFor={`singleLane-${incident.groupId}`}
-                className="text-sm font-normal"
-              >
-                Single lane traffic possible
-              </Label>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id={`singleLane-${incident.groupId}`}
+                  checked={incident.incidentDetails.isSingleLane || false}
+                  onChange={(e) =>
+                    onUpdate({
+                      incidentDetails: {
+                        ...incident.incidentDetails,
+                        isSingleLane: e.target.checked,
+                      },
+                    })
+                  }
+                  className="h-5 w-5 rounded border-gray-300"
+                />
+                <Label
+                  htmlFor={`singleLane-${incident.groupId}`}
+                  className="text-sm font-normal"
+                >
+                  Single lane traffic possible
+                </Label>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id={`safetyBarriers-${incident.groupId}`}
+                  checked={incident.incidentDetails.needsSafetyBarriers || false}
+                  onChange={(e) =>
+                    onUpdate({
+                      incidentDetails: {
+                        ...incident.incidentDetails,
+                        needsSafetyBarriers: e.target.checked,
+                      },
+                    })
+                  }
+                  className="h-5 w-5 rounded border-gray-300"
+                />
+                <Label
+                  htmlFor={`safetyBarriers-${incident.groupId}`}
+                  className="text-sm font-normal"
+                >
+                  Needs safety barriers
+                </Label>
+              </div>
             </div>
 
             <div className="space-y-1.5">
@@ -331,12 +368,15 @@ export function GroupReviewCard({
                 id={`blockedDistance-${incident.groupId}`}
                 type="number"
                 placeholder="e.g., 50"
-                value={incident.blockedDistanceMeters || ""}
+                value={incident.incidentDetails.blockedDistanceMeters || ""}
                 onChange={(e) =>
                   onUpdate({
-                    blockedDistanceMeters: e.target.value
-                      ? Number(e.target.value)
-                      : null,
+                    incidentDetails: {
+                      ...incident.incidentDetails,
+                      blockedDistanceMeters: e.target.value
+                        ? Number(e.target.value)
+                        : null,
+                    },
                   })
                 }
                 className="h-10"

@@ -23,6 +23,19 @@ type PassabilityLevel =
   | "bus"
   | "truck";
 
+// Flexible incident details - add new fields here as needed
+export interface IncidentDetails {
+  isSingleLane?: boolean;
+  needsSafetyBarriers?: boolean;
+  blockedDistanceMeters?: number | null;
+  // Add new fields here without schema changes:
+  // alternativeRouteAvailable?: boolean;
+  // estimatedRepairDays?: number;
+  // hazardType?: string;
+  // affectedLanes?: number;
+  [key: string]: unknown; // Allow any additional fields
+}
+
 export interface BulkIncident {
   groupId: string;
   photos: PhotoWithMetadata[];
@@ -33,8 +46,8 @@ export interface BulkIncident {
   locationName: string;
   damageType: DamageType | null;
   passabilityLevel: PassabilityLevel | null;
-  isSingleLane: boolean;
-  blockedDistanceMeters: number | null;
+  // Flexible incident details (new fields go in here)
+  incidentDetails: IncidentDetails;
   description: string;
   isComplete: boolean;
 }
@@ -144,8 +157,11 @@ export const useBulkUploadStore = create<BulkUploadState & BulkUploadActions>()(
               locationName: "",
               damageType: null,
               passabilityLevel: null,
-              isSingleLane: false,
-              blockedDistanceMeters: null,
+              incidentDetails: {
+                isSingleLane: false,
+                needsSafetyBarriers: false,
+                blockedDistanceMeters: null,
+              },
               description: "",
               isComplete: false,
             };

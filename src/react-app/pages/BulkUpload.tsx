@@ -140,8 +140,12 @@ export function BulkUpload() {
             ? new Date(incident.incidentDate).toISOString()
             : undefined,
           passabilityLevel: incident.passabilityLevel || undefined,
-          isSingleLane: incident.isSingleLane,
-          blockedDistanceMeters: incident.blockedDistanceMeters || undefined,
+          // Legacy fields for backward compatibility
+          isSingleLane: incident.incidentDetails.isSingleLane || false,
+          needsSafetyBarriers: incident.incidentDetails.needsSafetyBarriers || false,
+          blockedDistanceMeters: incident.incidentDetails.blockedDistanceMeters || undefined,
+          // Flexible JSON for all incident details
+          incidentDetails: incident.incidentDetails,
           description: incident.description || undefined,
           mediaKeys: uploadedKeys,
           sourceChannel: "bulk_upload",
@@ -254,8 +258,12 @@ export function BulkUpload() {
               ? new Date(incident.incidentDate).toISOString()
               : undefined,
             passabilityLevel: incident.passabilityLevel || undefined,
-            isSingleLane: incident.isSingleLane,
-            blockedDistanceMeters: incident.blockedDistanceMeters || undefined,
+            // Legacy fields for backward compatibility
+            isSingleLane: incident.incidentDetails.isSingleLane || false,
+            needsSafetyBarriers: incident.incidentDetails.needsSafetyBarriers || false,
+            blockedDistanceMeters: incident.incidentDetails.blockedDistanceMeters || undefined,
+            // Flexible JSON for all incident details
+            incidentDetails: incident.incidentDetails,
             description: incident.description || undefined,
             mediaKeys: allKeys,
             sourceChannel: "bulk_upload",
