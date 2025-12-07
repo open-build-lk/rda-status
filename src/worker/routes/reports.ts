@@ -202,48 +202,62 @@ reportsRoutes.post(
     // Use user-provided location name or fall back to reverse geocoding
     const locationName = data.locationName || await reverseGeocode(data.latitude, data.longitude);
 
-    // Create the damage report
-    await db.insert(damageReports).values({
+    // Build location name with province/district
+    const fullLocationName = locationName
+      ? (data.province && data.district
+          ? `${locationName} (${data.district}, ${data.province})`
+          : data.province
+          ? `${locationName} (${data.province})`
+          : locationName)
+      : null;
+
+    // Build the values object for insertion
+    const insertValues = {
       id: reportId,
       reportNumber,
       submitterId: auth?.userId || null,
       anonymousName: data.anonymousName || null,
       anonymousEmail: data.anonymousEmail || null,
       anonymousContact: data.anonymousContact || null,
-      sourceType: "citizen",
-      sourceChannel: "mobile_web",
+      sourceType: "citizen" as const,
+      sourceChannel: "mobile_web" as const,
       latitude: data.latitude,
       longitude: data.longitude,
-      // Store province/district info in locationName if provided
-      locationName: locationName
-        ? (data.province && data.district
-            ? `${locationName} (${data.district}, ${data.province})`
-            : data.province
-            ? `${locationName} (${data.province})`
-            : locationName)
-        : null,
-      assetType: "road",
+      locationName: fullLocationName,
+      assetType: "road" as const,
       damageType: data.damageType,
-      severity: 2, // Default medium severity for citizen reports
+      severity: 2,
       description: data.description || `Citizen report: ${data.damageType}`,
-      status: "new",
+      status: "new" as const,
       passabilityLevel: data.passabilityLevel || "unpassable",
-      isSingleLane: data.isSingleLane || false,
-      needsSafetyBarriers: data.needsSafetyBarriers || false,
-      blockedDistanceMeters: data.blockedDistanceMeters || null,
-      // Store all incident details as JSON (includes legacy + new fields)
+      isSingleLane: data.isSingleLane === true,
+      needsSafetyBarriers: data.needsSafetyBarriers === true,
+      blockedDistanceMeters: data.blockedDistanceMeters ?? null,
       incidentDetails: JSON.stringify({
-        isSingleLane: data.isSingleLane || false,
-        needsSafetyBarriers: data.needsSafetyBarriers || false,
-        blockedDistanceMeters: data.blockedDistanceMeters || null,
+        isSingleLane: data.isSingleLane === true,
+        needsSafetyBarriers: data.needsSafetyBarriers === true,
+        blockedDistanceMeters: data.blockedDistanceMeters ?? null,
         ...data.incidentDetails,
       }),
-      submissionSource: "citizen_mobile",
+      submissionSource: "citizen_mobile" as const,
       isVerifiedSubmitter: !!auth,
       claimToken,
       createdAt: now,
       updatedAt: now,
-    });
+    };
+
+    // Log the values for debugging
+    console.log("Inserting damage report with values:", JSON.stringify(insertValues, null, 2));
+
+    // Create the damage report
+    try {
+      await db.insert(damageReports).values(insertValues);
+    } catch (error) {
+      console.error("Failed to insert damage report:", error);
+      console.error("Insert values were:", JSON.stringify(insertValues, null, 2));
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return c.json({ error: `Failed to create report: ${errorMessage}` }, 500);
+    }
 
     // Link any uploaded media to this report
     if (data.mediaKeys && data.mediaKeys.length > 0) {
