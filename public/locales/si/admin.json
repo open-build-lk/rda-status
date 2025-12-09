@@ -3,7 +3,7 @@
   "reports": {
     "title": "වාර්තා",
     "allReports": "සියලු වාර්තා",
-    "pendingReview": "පොරොත්තු",
+    "pendingReview": "විසඳීමට ඇති",
     "verified": "සත්‍යාපිත",
     "inProgress": "ක්‍රියාත්මක වෙමින්",
     "resolved": "විසඳා ඇත",
