@@ -10,6 +10,7 @@ import {
   CheckCircle,
   RotateCcw,
   Pencil,
+  Route,
 } from "lucide-react";
 import { getAllowedTransitions } from "@/lib/statusTransitions";
 
@@ -36,6 +37,10 @@ interface Report {
   districtName: string | null;
   roadLocation: string | null;
   mediaCount?: number;
+  // Classification fields
+  roadNumberInput?: string | null;
+  roadClass?: string | null;
+  classificationStatus?: string | null;
 }
 
 interface ReportCardProps {
@@ -48,8 +53,26 @@ interface ReportCardProps {
   onReopen: (id: string) => void;
   onUpdateProgress: (id: string) => void;
   onViewDetails: (id: string) => void;
+  onClassify?: (id: string) => void;
   isUpdating?: boolean;
 }
+
+// Classification status styling
+const classificationStatusConfig: Record<string, { label: string; color: string }> = {
+  pending: { label: "Needs Classification", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300" },
+  auto_classified: { label: "Auto-Classified", color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300" },
+  manual_classified: { label: "Classified", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" },
+  legacy: { label: "Legacy", color: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400" },
+  unclassifiable: { label: "N/A", color: "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500" },
+};
+
+const roadClassColors: Record<string, string> = {
+  A: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
+  B: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",
+  C: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300",
+  D: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
+  E: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+};
 
 // Damage type icons using emoji for mobile clarity
 const damageTypeIcons: Record<string, string> = {
@@ -150,6 +173,7 @@ export function ReportCard({
   onReopen,
   onUpdateProgress,
   onViewDetails,
+  onClassify,
   isUpdating,
 }: ReportCardProps) {
   const status = statusConfig[report.status] || statusConfig.new;
@@ -227,6 +251,23 @@ export function ReportCard({
           )}
         </div>
 
+        {/* Road classification badge */}
+        {(report.classificationStatus || report.roadClass) && (
+          <div className="mt-2 flex items-center gap-2 text-xs">
+            <Route className="w-3 h-3 text-gray-400" />
+            {report.roadClass && (
+              <span className={`px-1.5 py-0.5 rounded font-medium ${roadClassColors[report.roadClass] || "bg-gray-100"}`}>
+                {report.roadClass}
+              </span>
+            )}
+            {report.classificationStatus && (
+              <span className={`px-1.5 py-0.5 rounded ${classificationStatusConfig[report.classificationStatus]?.color || "bg-gray-100"}`}>
+                {classificationStatusConfig[report.classificationStatus]?.label || report.classificationStatus}
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Progress and Cost - show for in_progress/resolved or when data exists */}
         {(report.status === "in_progress" || report.status === "resolved" || progressPercent > 0 || estimatedCostLkr) && (
           <div className="mt-3 pt-3 border-t border-gray-200/50 dark:border-gray-700/50 space-y-2">
@@ -268,6 +309,23 @@ export function ReportCard({
       */}
       <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-900/50">
         <div className="flex items-center gap-2">
+          {/* Classification button for pending reports */}
+          {onClassify && (!report.classificationStatus || report.classificationStatus === "pending") && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-9 border-amber-300 text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClassify(report.id);
+              }}
+              disabled={isUpdating}
+            >
+              <Route className="w-4 h-4 mr-1" />
+              Classify
+            </Button>
+          )}
+
           {/* NEW status: Verify (blue) + Reject (red outline) */}
           {report.status === "new" && canVerify && (
             <Button

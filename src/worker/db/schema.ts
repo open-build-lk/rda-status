@@ -106,6 +106,14 @@ export const damageReports = sqliteTable(
     claimToken: text("claim_token"), // For anonymous users to claim reports later
     // Workflow data (admin/field officer updates)
     workflowData: text("workflow_data"), // JSON: { progressPercent, estimatedCostLkr, notes, etc. }
+    // Classification fields
+    roadId: text("road_id"), // FK to roads table (if matched)
+    roadNumberInput: text("road_number_input"), // What user typed (free text)
+    roadClass: text("road_class"), // A, B, C, D, E, or NULL
+    assignedOrgId: text("assigned_org_id"), // FK to organizations
+    classificationStatus: text("classification_status").default("pending"), // pending, auto_classified, manual_classified, legacy, unclassifiable
+    classifiedBy: text("classified_by"), // User ID who classified
+    classifiedAt: integer("classified_at", { mode: "timestamp" }),
     // Timestamps
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
@@ -119,6 +127,10 @@ export const damageReports = sqliteTable(
     index("reports_priority_idx").on(table.priorityScore),
     index("reports_location_idx").on(table.latitude, table.longitude),
     index("reports_claim_token_idx").on(table.claimToken),
+    index("reports_road_id_idx").on(table.roadId),
+    index("reports_assigned_org_idx").on(table.assignedOrgId),
+    index("reports_classification_status_idx").on(table.classificationStatus),
+    index("reports_road_class_idx").on(table.roadClass),
   ]
 );
 
@@ -145,16 +157,23 @@ export const mediaAttachments = sqliteTable(
   ]
 );
 
-// ============ STATE TRANSITIONS ============
+// ============ STATE TRANSITIONS (Audit Trail) ============
 export const stateTransitions = sqliteTable(
   "state_transitions",
   {
     id: text("id").primaryKey(),
-    reportId: text("report_id")
-      .notNull()
-      .references(() => damageReports.id),
+    // Generic target tracking for multi-entity audit trail
+    targetType: text("target_type").notNull().default("report"), // report, user, invitation, user_organization
+    targetId: text("target_id"), // ID of the affected entity
+    // Legacy: Keep reportId for backwards compatibility with existing code
+    reportId: text("report_id").references(() => damageReports.id),
+    // For backwards compatibility, keep status-specific fields
     fromStatus: text("from_status"),
-    toStatus: text("to_status").notNull(),
+    toStatus: text("to_status"),
+    // Generic field tracking for full audit trail
+    fieldName: text("field_name").notNull().default("status"), // status, severity, damageType, role, isActive, etc.
+    oldValue: text("old_value"),
+    newValue: text("new_value"),
     userId: text("user_id").references(() => user.id),
     userRole: text("user_role"),
     reason: text("reason"),
@@ -165,6 +184,9 @@ export const stateTransitions = sqliteTable(
   (table) => [
     index("transitions_report_idx").on(table.reportId),
     index("transitions_created_idx").on(table.createdAt),
+    index("transitions_field_idx").on(table.fieldName),
+    index("transitions_target_type_idx").on(table.targetType),
+    index("transitions_target_idx").on(table.targetType, table.targetId),
   ]
 );
 
@@ -309,13 +331,114 @@ export const comments = sqliteTable(
   ]
 );
 
+// ============ ROADS (from OpenStreetMap) ============
+export const roads = sqliteTable(
+  "roads",
+  {
+    id: text("id").primaryKey(),
+    osmId: text("osm_id").unique(),
+    roadNumber: text("road_number").notNull(),
+    roadClass: text("road_class").notNull(), // A, B, C, D, E
+    name: text("name"),
+    nameSi: text("name_si"),
+    nameTa: text("name_ta"),
+    province: text("province"),
+    districts: text("districts"), // JSON array
+    lastUpdated: integer("last_updated", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("roads_road_number_idx").on(table.roadNumber),
+    index("roads_road_class_idx").on(table.roadClass),
+    index("roads_name_idx").on(table.name),
+    index("roads_province_idx").on(table.province),
+  ]
+);
+
+// ============ ORGANIZATIONS ============
+export const organizations = sqliteTable(
+  "organizations",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    code: text("code").notNull().unique(),
+    type: text("type").notNull(), // national, provincial, local, special
+    province: text("province"),
+    district: text("district"),
+    roadClasses: text("road_classes"), // JSON array: ["A", "B", "E"]
+    parentOrgId: text("parent_org_id"),
+    contactEmail: text("contact_email"),
+    contactPhone: text("contact_phone"),
+    isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .default(sql`(unixepoch())`)
+      .notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .default(sql`(unixepoch())`)
+      .notNull(),
+  },
+  (table) => [
+    index("organizations_code_idx").on(table.code),
+    index("organizations_type_idx").on(table.type),
+    index("organizations_province_idx").on(table.province),
+    index("organizations_is_active_idx").on(table.isActive),
+  ]
+);
+
+// ============ USER-ORGANIZATION ASSIGNMENTS ============
+export const userOrganizations = sqliteTable(
+  "user_organizations",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull().references(() => user.id),
+    organizationId: text("organization_id").notNull().references(() => organizations.id),
+    role: text("role").notNull().default("member"), // member, manager, admin
+    isPrimary: integer("is_primary", { mode: "boolean" }).notNull().default(false),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .default(sql`(unixepoch())`)
+      .notNull(),
+  },
+  (table) => [
+    index("user_orgs_user_idx").on(table.userId),
+    index("user_orgs_org_idx").on(table.organizationId),
+  ]
+);
+
+// ============ CLASSIFICATION HISTORY ============
+export const classificationHistory = sqliteTable(
+  "classification_history",
+  {
+    id: text("id").primaryKey(),
+    reportId: text("report_id").notNull().references(() => damageReports.id),
+    previousRoadClass: text("previous_road_class"),
+    newRoadClass: text("new_road_class"),
+    previousOrgId: text("previous_org_id"),
+    newOrgId: text("new_org_id"),
+    previousStatus: text("previous_status"),
+    newStatus: text("new_status"),
+    changedBy: text("changed_by").notNull(),
+    reason: text("reason"),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .default(sql`(unixepoch())`)
+      .notNull(),
+  },
+  (table) => [
+    index("classification_history_report_idx").on(table.reportId),
+    index("classification_history_created_idx").on(table.createdAt),
+  ]
+);
+
 // ============ RELATIONS ============
-export const userRelations = relations(user, ({ many }) => ({
+export const userRelations = relations(user, ({ one, many }) => ({
   damageReports: many(damageReports),
   stateTransitions: many(stateTransitions),
   comments: many(comments),
   managedProjects: many(rebuildProjects),
   sentInvitations: many(userInvitations),
+  userOrganizations: many(userOrganizations),
+  primaryOrganization: one(organizations, {
+    fields: [user.organizationId],
+    references: [organizations.id],
+  }),
 }));
 
 export const userInvitationsRelations = relations(userInvitations, ({ one }) => ({
@@ -359,6 +482,15 @@ export const damageReportsRelations = relations(
     projectLinks: many(reportProjectLinks),
     comments: many(comments),
     roadSegments: many(roadSegments),
+    road: one(roads, {
+      fields: [damageReports.roadId],
+      references: [roads.id],
+    }),
+    assignedOrg: one(organizations, {
+      fields: [damageReports.assignedOrgId],
+      references: [organizations.id],
+    }),
+    classificationHistory: many(classificationHistory),
   })
 );
 
@@ -460,5 +592,38 @@ export const commentsRelations = relations(comments, ({ one }) => ({
   commentUser: one(user, {
     fields: [comments.userId],
     references: [user.id],
+  }),
+}));
+
+export const roadsRelations = relations(roads, ({ many }) => ({
+  damageReports: many(damageReports),
+}));
+
+export const organizationsRelations = relations(organizations, ({ one, many }) => ({
+  parentOrg: one(organizations, {
+    fields: [organizations.parentOrgId],
+    references: [organizations.id],
+  }),
+  childOrgs: many(organizations),
+  userOrganizations: many(userOrganizations),
+  damageReports: many(damageReports),
+  users: many(user),
+}));
+
+export const userOrganizationsRelations = relations(userOrganizations, ({ one }) => ({
+  user: one(user, {
+    fields: [userOrganizations.userId],
+    references: [user.id],
+  }),
+  organization: one(organizations, {
+    fields: [userOrganizations.organizationId],
+    references: [organizations.id],
+  }),
+}));
+
+export const classificationHistoryRelations = relations(classificationHistory, ({ one }) => ({
+  report: one(damageReports, {
+    fields: [classificationHistory.reportId],
+    references: [damageReports.id],
   }),
 }));

@@ -151,6 +151,11 @@ const createReportSchema = z.object({
   district: z.string().max(50).optional(),
   locationName: z.string().max(200).optional(), // Road/location name
 
+  // Road classification (optional)
+  roadId: z.string().optional(), // ID of selected road from roads table
+  roadNumberInput: z.string().max(20).optional(), // What user typed (for matching/unmatched)
+  roadClass: z.enum(["A", "B", "C", "D", "E"]).optional(), // Road class if matched
+
   // Optional
   anonymousName: z.string().max(100).optional(),
   anonymousEmail: z.string().email().optional(),
@@ -182,6 +187,56 @@ function generateReportNumber(): string {
   return `CR-${year}${month}${day}-${random}`;
 }
 
+// Map province IDs to Provincial Road Authority organization IDs
+const PROVINCE_TO_PRA: Record<string, string> = {
+  western: "org_wp_pra",
+  central: "org_cp_pra",
+  southern: "org_sp_pra",
+  northern: "org_np_pra",
+  eastern: "org_ep_pra",
+  north_western: "org_nwp_pra",
+  north_central: "org_ncp_pra",
+  uva: "org_up_pra",
+  sabaragamuwa: "org_sab_pra",
+};
+
+// Determine assigned organization based on road class and province
+function determineAssignedOrg(
+  roadClass: string | undefined,
+  province: string | undefined
+): string | null {
+  if (!roadClass) return null;
+
+  // A, B, E class roads → RDA (national)
+  if (["A", "B", "E"].includes(roadClass)) {
+    return "org_rda";
+  }
+
+  // C, D class roads → Provincial Road Authority
+  if (["C", "D"].includes(roadClass) && province) {
+    return PROVINCE_TO_PRA[province.toLowerCase()] || null;
+  }
+
+  return null;
+}
+
+// Determine classification status
+function determineClassificationStatus(
+  roadId: string | undefined,
+  roadNumberInput: string | undefined
+): "auto_classified" | "pending" {
+  // If we have a matched road ID, it's auto-classified
+  if (roadId) {
+    return "auto_classified";
+  }
+  // If user typed something but no match, needs manual classification
+  if (roadNumberInput) {
+    return "pending";
+  }
+  // No road info provided - pending
+  return "pending";
+}
+
 // POST /api/v1/reports - Create new incident report (anonymous or authenticated)
 reportsRoutes.post(
   "/",
@@ -202,14 +257,16 @@ reportsRoutes.post(
     // Use user-provided location name or fall back to reverse geocoding
     const locationName = data.locationName || await reverseGeocode(data.latitude, data.longitude);
 
-    // Build location name with province/district
-    const fullLocationName = locationName
-      ? (data.province && data.district
-          ? `${locationName} (${data.district}, ${data.province})`
-          : data.province
-          ? `${locationName} (${data.province})`
-          : locationName)
-      : null;
+    // Store province/district in workflowData JSON (not in locationName to avoid corruption)
+    const workflowData = JSON.stringify({
+      province: data.province || null,
+      district: data.district || null,
+    });
+
+    // Determine road classification and org assignment
+    const classificationStatus = determineClassificationStatus(data.roadId, data.roadNumberInput);
+    const assignedOrgId = determineAssignedOrg(data.roadClass, data.province);
+    const classifiedAt = classificationStatus === "auto_classified" ? now : null;
 
     // Build the values object for insertion
     const insertValues = {
@@ -223,7 +280,8 @@ reportsRoutes.post(
       sourceChannel: "mobile_web" as const,
       latitude: data.latitude,
       longitude: data.longitude,
-      locationName: fullLocationName,
+      locationName: locationName || null,
+      workflowData,
       assetType: "road" as const,
       damageType: data.damageType,
       severity: 2,
@@ -246,23 +304,23 @@ reportsRoutes.post(
       updatedAt: now,
     };
 
-    // Log the values for debugging
-    console.log("Inserting damage report with values:", JSON.stringify(insertValues, null, 2));
-
     // Create the damage report using raw SQL (bypassing Drizzle ORM issues with D1)
     try {
       const createdAtTs = Math.floor(now.getTime() / 1000);
       const updatedAtTs = Math.floor(now.getTime() / 1000);
 
+      const classifiedAtTs = classifiedAt ? Math.floor(classifiedAt.getTime() / 1000) : null;
+
       await c.env.DB.prepare(`
         INSERT INTO damage_reports (
           id, report_number, submitter_id, anonymous_name, anonymous_email, anonymous_contact,
-          source_type, source_channel, latitude, longitude, location_name, asset_type,
+          source_type, source_channel, latitude, longitude, location_name, workflow_data, asset_type,
           damage_type, severity, description, status, passability_level,
           is_single_lane, needs_safety_barriers, blocked_distance_meters,
           incident_details, submission_source, is_verified_submitter, claim_token,
+          road_id, road_number_input, road_class, assigned_org_id, classification_status, classified_at,
           created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).bind(
         insertValues.id,
         insertValues.reportNumber,
@@ -275,6 +333,7 @@ reportsRoutes.post(
         insertValues.latitude,
         insertValues.longitude,
         insertValues.locationName,
+        insertValues.workflowData,
         insertValues.assetType,
         insertValues.damageType,
         insertValues.severity,
@@ -288,6 +347,12 @@ reportsRoutes.post(
         insertValues.submissionSource,
         insertValues.isVerifiedSubmitter ? 1 : 0,
         insertValues.claimToken,
+        data.roadId || null,
+        data.roadNumberInput || null,
+        data.roadClass || null,
+        assignedOrgId,
+        classificationStatus,
+        classifiedAtTs,
         createdAtTs,
         updatedAtTs
       ).run();

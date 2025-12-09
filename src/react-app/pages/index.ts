@@ -8,6 +8,7 @@ export { ReportIncident } from "./ReportIncident";
 export { ReportVerified } from "./ReportVerified";
 export { AdminReports } from "./AdminReports";
 export { AdminUsers } from "./AdminUsers";
+export { AdminAuditTrail } from "./AdminAuditTrail";
 export { AcceptInvitation } from "./AcceptInvitation";
 export { BulkUpload } from "./BulkUpload";
 export { UnverifiedReports } from "./UnverifiedReports";

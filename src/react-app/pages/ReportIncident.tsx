@@ -18,6 +18,7 @@ import { CameraCapture } from "@/components/camera/CameraCapture";
 import { PhotoGallery, type Photo } from "@/components/camera/PhotoGallery";
 import { IncidentCategorySelect } from "@/components/forms/IncidentCategorySelect";
 import { PassabilityScale } from "@/components/forms/PassabilityScale";
+import { RoadNumberInput } from "@/components/forms/RoadNumberInput";
 import { useIncidentReportStore } from "@/stores/incidentReport";
 import { useAuthStore } from "@/stores/auth";
 import {
@@ -84,7 +85,12 @@ export function ReportIncident() {
     setSubmitError,
     setSubmittedReport,
     reset,
+    roadNumberInput,
+    selectedRoad,
+    setRoadNumberInput,
+    setSelectedRoad,
   } = useIncidentReportStore();
+
   // Prefill contact info from signed-in user when available (but keep editable)
   useEffect(() => {
     if (!user) return;
@@ -277,6 +283,10 @@ export function ReportIncident() {
         anonymousContact: anonymousContact || undefined,
         description: description || undefined,
         mediaKeys,
+        // Road classification data
+        roadId: selectedRoad?.id || undefined,
+        roadNumberInput: roadNumberInput || undefined,
+        roadClass: selectedRoad?.roadClass || undefined,
       };
 
       const reportResponse = await fetch("/api/v1/reports", {
@@ -542,6 +552,13 @@ export function ReportIncident() {
                   </Select>
                 </div>
               </div>
+
+              <RoadNumberInput
+                value={roadNumberInput}
+                selectedRoad={selectedRoad}
+                onChange={setRoadNumberInput}
+                onRoadSelect={setSelectedRoad}
+              />
 
               <div className="space-y-2">
                 <Label htmlFor="locationName">Road / Location Name</Label>

@@ -146,6 +146,10 @@ export function BulkUpload() {
           locationName: incident.locationName || undefined,
           damageType: incident.damageType,
           passabilityLevel: incident.passabilityLevel || undefined,
+          // Road classification data
+          roadId: incident.selectedRoad?.id || undefined,
+          roadNumberInput: incident.roadNumberInput || undefined,
+          roadClass: incident.selectedRoad?.roadClass || undefined,
           // Legacy fields for backward compatibility
           isSingleLane: incident.incidentDetails.isSingleLane || false,
           needsSafetyBarriers: incident.incidentDetails.needsSafetyBarriers || false,
@@ -269,6 +273,10 @@ export function BulkUpload() {
             locationName: incident.locationName || undefined,
             damageType: incident.damageType,
             passabilityLevel: incident.passabilityLevel || undefined,
+            // Road classification data
+            roadId: incident.selectedRoad?.id || undefined,
+            roadNumberInput: incident.roadNumberInput || undefined,
+            roadClass: incident.selectedRoad?.roadClass || undefined,
             // Legacy fields for backward compatibility
             isSingleLane: incident.incidentDetails.isSingleLane || false,
             needsSafetyBarriers: incident.incidentDetails.needsSafetyBarriers || false,

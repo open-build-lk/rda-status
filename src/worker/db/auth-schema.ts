@@ -25,6 +25,8 @@ export const user = sqliteTable("user", {
   districtScope: text("district_scope"),
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   lastLogin: integer("last_login", { mode: "timestamp" }),
+  organizationId: text("organization_id"), // Primary organization for quick access
+  designation: text("designation"), // Job title/position
 });
 
 // ============ BETTER-AUTH SESSION TABLE ============

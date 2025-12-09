@@ -22,6 +22,13 @@ type PassabilityLevel =
   | "bus"
   | "truck";
 
+export interface SelectedRoad {
+  id: string;
+  roadNumber: string;
+  roadClass: string;
+  name: string | null;
+}
+
 interface IncidentReportState {
   // Step 1: Photos
   photos: Photo[];
@@ -33,6 +40,10 @@ interface IncidentReportState {
   district: string | null;
   locationName: string;
   isLoadingLocation: boolean;
+
+  // Road classification
+  roadNumberInput: string;
+  selectedRoad: SelectedRoad | null;
 
   // Step 2: Incident Details
   damageType: DamageType | null;
@@ -67,6 +78,10 @@ interface IncidentReportActions {
   setLocationName: (name: string) => void;
   setIsLoadingLocation: (loading: boolean) => void;
 
+  // Road actions
+  setRoadNumberInput: (input: string) => void;
+  setSelectedRoad: (road: SelectedRoad | null) => void;
+
   // Form field actions
   setDamageType: (type: DamageType) => void;
   setPassabilityLevel: (level: PassabilityLevel | null) => void;
@@ -95,6 +110,8 @@ const initialState: IncidentReportState = {
   district: null,
   locationName: "",
   isLoadingLocation: false,
+  roadNumberInput: "",
+  selectedRoad: null,
   damageType: null,
   passabilityLevel: null,
   isSingleLane: false,
@@ -170,6 +187,14 @@ export const useIncidentReportStore = create<IncidentReportState & IncidentRepor
 
       setIsLoadingLocation: (loading: boolean) => {
         set({ isLoadingLocation: loading });
+      },
+
+      setRoadNumberInput: (input: string) => {
+        set({ roadNumberInput: input });
+      },
+
+      setSelectedRoad: (road: SelectedRoad | null) => {
+        set({ selectedRoad: road });
       },
 
       setDamageType: (type: DamageType) => {
