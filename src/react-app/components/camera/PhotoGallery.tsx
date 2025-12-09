@@ -1,4 +1,5 @@
 import { X, MapPin, Camera } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 
 export interface Photo {
@@ -27,18 +28,19 @@ export function PhotoGallery({
   locationRequired,
   onRetryLocation,
 }: PhotoGalleryProps) {
+  const { t } = useTranslation();
   const canAddMore = photos.length < maxPhotos;
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          Photos ({photos.length}/{maxPhotos})
+          {t("report:photos.count", { current: photos.length, max: maxPhotos })}
         </span>
         {photos.length > 0 && hasGeoPhoto && (
           <span className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
             <MapPin className="w-3 h-3" />
-            Location captured
+            {t("report:photos.locationCaptured")}
           </span>
         )}
       </div>
@@ -53,7 +55,7 @@ export function PhotoGallery({
             />
             {index === 0 && (
               <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-primary-600 text-white text-xs rounded">
-                Primary
+                {t("report:photos.primary")}
               </div>
             )}
             <button
@@ -76,7 +78,7 @@ export function PhotoGallery({
             className="aspect-square rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-primary-500 dark:hover:border-primary-400 flex flex-col items-center justify-center gap-1 text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
           >
             <Camera className="w-6 h-6" />
-            <span className="text-xs">Add</span>
+            <span className="text-xs">{t("report:photos.add")}</span>
           </button>
         )}
       </div>
@@ -89,7 +91,7 @@ export function PhotoGallery({
         >
           <div className="flex flex-col items-center gap-2">
             <Camera className="w-8 h-8" />
-            <span>Take a photo of the incident</span>
+            <span>{t("report:photos.takePhotoPrompt")}</span>
           </div>
         </Button>
       )}
@@ -98,10 +100,10 @@ export function PhotoGallery({
         <div className="flex items-start gap-2 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-3 py-2 text-xs text-red-600 dark:text-red-300">
           <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
           <div className="space-y-1">
-            <p>We couldn&apos;t detect location from these photos. Enable GPS and retake.</p>
+            <p>{t("report:photos.noGpsError")}</p>
             {onRetryLocation && (
               <Button variant="ghost" size="sm" className="h-7 px-2 text-red-600 dark:text-red-300" onClick={onRetryLocation}>
-                Retake with GPS
+                {t("report:photos.retakeWithGps")}
               </Button>
             )}
           </div>

@@ -254,6 +254,12 @@ reportsRoutes.post(
     const reportId = crypto.randomUUID();
     const reportNumber = generateReportNumber();
 
+    // Determine if this is a trusted submitter (non-citizen role)
+    // Trusted submitters get auto-verified status
+    const isTrustedSubmitter = auth && auth.role && auth.role !== "citizen";
+    const reportStatus = isTrustedSubmitter ? "verified" : "new";
+    const sourceType = isTrustedSubmitter ? "field_officer" : "citizen";
+
     // Use user-provided location name or fall back to reverse geocoding
     const locationName = data.locationName || await reverseGeocode(data.latitude, data.longitude);
 
@@ -276,7 +282,7 @@ reportsRoutes.post(
       anonymousName: data.anonymousName || null,
       anonymousEmail: data.anonymousEmail || null,
       anonymousContact: data.anonymousContact || null,
-      sourceType: "citizen" as const,
+      sourceType: sourceType as "citizen" | "field_officer",
       sourceChannel: "mobile_web" as const,
       latitude: data.latitude,
       longitude: data.longitude,
@@ -286,7 +292,7 @@ reportsRoutes.post(
       damageType: data.damageType,
       severity: 2,
       description: data.description || `Citizen report: ${data.damageType}`,
-      status: "new" as const,
+      status: reportStatus as "new" | "verified",
       passabilityLevel: data.passabilityLevel || "unpassable",
       isSingleLane: data.isSingleLane === true,
       needsSafetyBarriers: data.needsSafetyBarriers === true,

@@ -1,0 +1,106 @@
+{
+  "app": {
+    "title": "Sri Lanka Road Status",
+    "tagline": "Real-time road infrastructure tracking"
+  },
+  "nav": {
+    "home": "Home",
+    "report": "Report",
+    "map": "Map",
+    "admin": "Admin",
+    "login": "Login",
+    "logout": "Logout",
+    "dashboard": "Dashboard",
+    "reports": "Reports",
+    "users": "Users",
+    "bulkUpload": "Bulk Upload",
+    "adminReports": "Admin Reports"
+  },
+  "buttons": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "submit": "Submit",
+    "next": "Next",
+    "back": "Back",
+    "close": "Close",
+    "clear": "Clear",
+    "edit": "Edit",
+    "delete": "Delete",
+    "view": "View",
+    "download": "Download",
+    "upload": "Upload",
+    "search": "Search",
+    "filter": "Filter",
+    "reset": "Reset",
+    "confirm": "Confirm",
+    "retry": "Retry"
+  },
+  "status": {
+    "new": "New",
+    "verified": "Verified",
+    "in_progress": "In Progress",
+    "resolved": "Resolved",
+    "rejected": "Rejected"
+  },
+  "severity": {
+    "1": "Low",
+    "2": "Medium",
+    "3": "High",
+    "4": "Critical"
+  },
+  "damageTypes": {
+    "tree_fall": "Tree Fall",
+    "tree_fall_desc": "Fallen tree blocking road",
+    "landslide": "Landslide",
+    "landslide_desc": "Earth/rock slide onto road",
+    "flooding": "Flooding",
+    "flooding_desc": "Water covering road",
+    "road_breakage": "Road Damage",
+    "road_breakage_desc": "Cracks, potholes, surface damage",
+    "bridge_collapse": "Bridge Collapse",
+    "bridge_collapse_desc": "Bridge damaged or collapsed",
+    "washout": "Washout",
+    "washout_desc": "Road washed away",
+    "blockage": "Blockage",
+    "blockage_desc": "Debris or obstacle blocking",
+    "collapse": "Collapse",
+    "collapse_desc": "Road/structure collapsed",
+    "other": "Other",
+    "other_desc": "Other road issue"
+  },
+  "passability": {
+    "unpassable": "Closed",
+    "foot": "Walk",
+    "bike": "Bike",
+    "3wheeler": "Tuk",
+    "car": "Car",
+    "bus": "Bus",
+    "truck": "Truck"
+  },
+  "language": {
+    "en": "English",
+    "si": "සිංහල",
+    "ta": "தமிழ்",
+    "select": "Select Language"
+  },
+  "roadClass": {
+    "A": "A - National Trunk",
+    "B": "B - National Secondary",
+    "C": "C - Provincial Main",
+    "D": "D - Provincial Secondary",
+    "E": "E - Expressway"
+  },
+  "messages": {
+    "loading": "Loading...",
+    "noResults": "No results found",
+    "error": "An error occurred",
+    "success": "Success",
+    "saved": "Saved successfully",
+    "deleted": "Deleted successfully"
+  },
+  "optional": "optional",
+  "footer": {
+    "dataSource": "Data Source: Road Development Authority (RDA).",
+    "lastUpdated": "Last Updated: {{date}}"
+  }
+}

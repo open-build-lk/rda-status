@@ -1,0 +1,138 @@
+{
+  "title": "Report Incident",
+  "subtitle": "Help us track road damage in Sri Lanka",
+  "steps": {
+    "photos": "Photos",
+    "location": "Location",
+    "details": "Details",
+    "contact": "Contact",
+    "review": "Review"
+  },
+  "photos": {
+    "title": "Take Photos of the Incident",
+    "subtitle": "Capture clear photos showing the road damage",
+    "addPhoto": "Add Photo",
+    "takePhoto": "Take Photo",
+    "choosePhoto": "Choose Photo",
+    "removePhoto": "Remove Photo",
+    "minPhotos": "At least one photo is required",
+    "gpsRequired": "Photos must have GPS coordinates",
+    "gpsHint": "We need at least one photo with GPS. Enable location for your camera, then retake.",
+    "bulkUpload": "Have existing photos? Upload in bulk",
+    "count": "Photos ({{current}}/{{max}})",
+    "locationCaptured": "Location captured",
+    "primary": "Primary",
+    "add": "Add",
+    "takePhotoPrompt": "Take a photo of the incident",
+    "retakeWithGps": "Retake with GPS",
+    "noGpsError": "We couldn't detect location from these photos. Enable GPS and retake."
+  },
+  "location": {
+    "title": "Verify Location",
+    "subtitle": "Confirm the incident location",
+    "province": "Province",
+    "district": "District",
+    "selectProvince": "Select province",
+    "selectDistrict": "Select district",
+    "selectProvinceFirst": "Select province first",
+    "roadNumber": "Road / Location Name",
+    "roadNumberPlaceholder": "e.g., Kandy Road near Town Hall",
+    "detectingLocation": "Detecting location...",
+    "locationDetected": "Location captured",
+    "manualEntry": "Enter location manually",
+    "autoDetected": "Auto-detected from GPS. Edit if needed.",
+    "viewOnMap": "View on map"
+  },
+  "details": {
+    "title": "Incident Details",
+    "subtitle": "Describe what happened",
+    "damageType": "What type of incident?",
+    "selectDamageType": "Select damage type",
+    "passability": "What can pass through?",
+    "passabilityHint": "Select the largest vehicle that can pass",
+    "selectPassability": "Select passability level",
+    "singleLane": "Single lane traffic possible",
+    "needsBarriers": "Needs safety barriers",
+    "barriersHint": "Road is carefully usable but requires barriers",
+    "blockedDistance": "Blocked distance (meters)",
+    "blockedDistancePlaceholder": "e.g., 50",
+    "additionalDetails": "Additional Details",
+    "additionalDetailsPlaceholder": "Describe any additional details about the incident..."
+  },
+  "contact": {
+    "title": "Contact Information",
+    "subtitle": "Your contact details (optional)",
+    "name": "Your Name",
+    "namePlaceholder": "Enter your name",
+    "email": "Email",
+    "emailPlaceholder": "you@example.com",
+    "phone": "Phone Number",
+    "phonePlaceholder": "07X XXX XXXX",
+    "prefilled": "We pre-filled your details. You can edit before submitting.",
+    "verificationNote": "We'll send you a verification link to confirm your report."
+  },
+  "review": {
+    "title": "Review & Submit",
+    "subtitle": "Review your report before submitting",
+    "photos": "Photos",
+    "location": "Location",
+    "incidentType": "Incident Type",
+    "passability": "Passability",
+    "contact": "Contact",
+    "checklist": "Checklist",
+    "photoWithGps": "Photo with GPS",
+    "incidentSelected": "Incident type selected",
+    "contactOptional": "Contact info (optional)",
+    "contactRequired": "Name and email added",
+    "complete": "Complete"
+  },
+  "submit": {
+    "button": "Submit Report",
+    "submitting": "Submitting...",
+    "success": "Report Submitted!",
+    "successMessage": "Thank you for reporting this incident. Your report will be reviewed by our team.",
+    "error": "Failed to submit report",
+    "uploadError": "Failed to upload photos",
+    "tryAgain": "Please try again",
+    "verificationSent": "We've sent a verification email to:",
+    "checkEmail": "Please check your email and click the verification link to confirm your report.",
+    "viewMap": "View Map",
+    "reportAnother": "Report Another"
+  },
+  "validation": {
+    "photoRequired": "Please take at least one photo",
+    "incidentTypeRequired": "Please select an incident category",
+    "locationRequired": "Location is required. Please take a photo with GPS enabled.",
+    "nameRequired": "Please enter your name",
+    "emailRequired": "Please enter your email address",
+    "emailInvalid": "Please enter a valid email address"
+  },
+  "checklist": {
+    "addPhoto": "Add at least one photo",
+    "retakeWithGps": "Retake a photo with GPS",
+    "selectType": "Select an incident type",
+    "addContact": "Add a name and valid email"
+  },
+  "alerts": {
+    "addPhoto": "Add at least one photo to start your report.",
+    "noGps": "We couldn't detect location from your photo. Enable GPS and retake, or allow location access."
+  },
+  "blockers": {
+    "completePhoto": "Complete the photo step with GPS to edit details.",
+    "completePhotoAndDetails": "Finish the photo and incident details steps to add your contact info."
+  },
+  "home": {
+    "roadsAffected": "Roads Affected",
+    "provinces": "Provinces",
+    "flooding": "Flooding",
+    "landslides": "Landslides",
+    "activeIncidents": "Active Incidents",
+    "recentReports": "Recent Reports",
+    "viewAll": "View All",
+    "reportNew": "Report New Incident",
+    "citizenReports": "{{count}} citizen reports in {{provinces}} provinces",
+    "mapLegend": "Map Legend",
+    "blockedRoad": "Blocked Road",
+    "damageType": "Damage Type"
+  }
+}

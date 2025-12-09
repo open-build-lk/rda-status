@@ -354,6 +354,8 @@ const updateReportSchema = z.object({
   isSingleLane: z.boolean().nullable().optional(),
   needsSafetyBarriers: z.boolean().nullable().optional(),
   blockedDistanceMeters: z.number().nullable().optional(),
+  // Organization assignment
+  assignedOrgId: z.string().nullable().optional(),
 });
 
 // PATCH /api/v1/admin/reports/:id/status - Update report status
@@ -554,6 +556,16 @@ adminRoutes.patch(
         fieldName: "blockedDistanceMeters",
         oldValue: report.blockedDistanceMeters !== null ? String(report.blockedDistanceMeters) : null,
         newValue: updates.blockedDistanceMeters !== null ? String(updates.blockedDistanceMeters) : null,
+      });
+    }
+
+    // Handle organization assignment
+    if (updates.assignedOrgId !== undefined && updates.assignedOrgId !== report.assignedOrgId) {
+      updateData.assignedOrgId = updates.assignedOrgId;
+      auditEntries.push({
+        fieldName: "assignedOrgId",
+        oldValue: report.assignedOrgId,
+        newValue: updates.assignedOrgId,
       });
     }
 

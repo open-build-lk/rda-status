@@ -1,0 +1,40 @@
+{
+  "provinces": {
+    "central": "Central",
+    "eastern": "Eastern",
+    "north-central": "North Central",
+    "northern": "Northern",
+    "north-western": "North Western",
+    "sabaragamuwa": "Sabaragamuwa",
+    "southern": "Southern",
+    "uva": "Uva",
+    "western": "Western"
+  },
+  "districts": {
+    "kandy": "Kandy",
+    "matale": "Matale",
+    "nuwara-eliya": "Nuwara Eliya",
+    "ampara": "Ampara",
+    "batticaloa": "Batticaloa",
+    "trincomalee": "Trincomalee",
+    "anuradhapura": "Anuradhapura",
+    "polonnaruwa": "Polonnaruwa",
+    "jaffna": "Jaffna",
+    "kilinochchi": "Kilinochchi",
+    "mannar": "Mannar",
+    "mullaitivu": "Mullaitivu",
+    "vavuniya": "Vavuniya",
+    "kurunegala": "Kurunegala",
+    "puttalam": "Puttalam",
+    "kegalle": "Kegalle",
+    "ratnapura": "Ratnapura",
+    "galle": "Galle",
+    "hambantota": "Hambantota",
+    "matara": "Matara",
+    "badulla": "Badulla",
+    "monaragala": "Monaragala",
+    "colombo": "Colombo",
+    "gampaha": "Gampaha",
+    "kalutara": "Kalutara"
+  }
+}

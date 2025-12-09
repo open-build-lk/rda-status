@@ -1,0 +1,63 @@
+{
+  "title": "Admin Dashboard",
+  "reports": {
+    "title": "Reports",
+    "allReports": "All Reports",
+    "pendingReview": "Pending Review",
+    "verified": "Verified",
+    "inProgress": "In Progress",
+    "resolved": "Resolved",
+    "rejected": "Rejected",
+    "classify": "Classify",
+    "verify": "Verify",
+    "reject": "Reject",
+    "resolve": "Resolve",
+    "updateProgress": "Update Progress",
+    "viewDetails": "View Details",
+    "noReports": "No reports found",
+    "classification": {
+      "needsClassification": "Needs Classification",
+      "autoClassified": "Auto-Classified",
+      "classified": "Classified",
+      "legacy": "Legacy",
+      "notApplicable": "N/A"
+    }
+  },
+  "users": {
+    "title": "Users",
+    "allUsers": "All Users",
+    "admins": "Admins",
+    "officers": "Officers",
+    "citizens": "Citizens",
+    "addUser": "Add User",
+    "editUser": "Edit User",
+    "deleteUser": "Delete User",
+    "role": "Role",
+    "status": "Status",
+    "lastActive": "Last Active"
+  },
+  "filters": {
+    "status": "Status",
+    "province": "Province",
+    "district": "District",
+    "damageType": "Damage Type",
+    "dateRange": "Date Range",
+    "clearFilters": "Clear Filters"
+  },
+  "actions": {
+    "approve": "Approve",
+    "reject": "Reject",
+    "assign": "Assign",
+    "reassign": "Reassign",
+    "close": "Close",
+    "reopen": "Reopen"
+  },
+  "auditTrail": {
+    "title": "Audit Trail",
+    "statusChange": "Status changed",
+    "from": "from",
+    "to": "to",
+    "by": "by",
+    "reason": "Reason"
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "title": "நிர்வாக டாஷ்போர்டு",
+  "reports": {
+    "title": "அறிக்கைகள்",
+    "allReports": "அனைத்து அறிக்கைகள்",
+    "pendingReview": "மதிப்பாய்வு நிலுவையில்",
+    "verified": "சரிபார்க்கப்பட்டது",
+    "inProgress": "செயல்பாட்டில்",
+    "resolved": "தீர்க்கப்பட்டது",
+    "rejected": "நிராகரிக்கப்பட்டது",
+    "classify": "வகைப்படுத்து",
+    "verify": "சரிபார்",
+    "reject": "நிராகரி",
+    "resolve": "தீர்",
+    "updateProgress": "முன்னேற்றத்தை புதுப்பி",
+    "viewDetails": "விவரங்களைப் பார்",
+    "noReports": "அறிக்கைகள் இல்லை",
+    "classification": {
+      "needsClassification": "வகைப்படுத்தல் தேவை",
+      "autoClassified": "தானியங்கி வகைப்படுத்தப்பட்டது",
+      "classified": "வகைப்படுத்தப்பட்டது",
+      "legacy": "பழைய",
+      "notApplicable": "பொருந்தாது"
+    }
+  },
+  "users": {
+    "title": "பயனர்கள்",
+    "allUsers": "அனைத்து பயனர்கள்",
+    "admins": "நிர்வாகிகள்",
+    "officers": "அதிகாரிகள்",
+    "citizens": "குடிமக்கள்",
+    "addUser": "பயனரைச் சேர்",
+    "editUser": "பயனரைத் திருத்து",
+    "deleteUser": "பயனரை நீக்கு",
+    "role": "பாத்திரம்",
+    "status": "நிலை",
+    "lastActive": "கடைசியாக செயல்பட்டது"
+  },
+  "filters": {
+    "status": "நிலை",
+    "province": "மாகாணம்",
+    "district": "மாவட்டம்",
+    "damageType": "சேத வகை",
+    "dateRange": "தேதி வரம்பு",
+    "clearFilters": "வடிகட்டிகளை அழி"
+  },
+  "actions": {
+    "approve": "அங்கீகரி",
+    "reject": "நிராகரி",
+    "assign": "ஒதுக்கு",
+    "reassign": "மறு ஒதுக்கு",
+    "close": "மூடு",
+    "reopen": "மீண்டும் திற"
+  },
+  "auditTrail": {
+    "title": "தணிக்கை பாதை",
+    "statusChange": "நிலை மாற்றப்பட்டது",
+    "from": "இருந்து",
+    "to": "வரை",
+    "by": "மூலம்",
+    "reason": "காரணம்"
+  }
+}

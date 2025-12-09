@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import {
   TreePine,
@@ -23,66 +24,19 @@ type DamageType =
 
 interface Category {
   id: DamageType;
-  label: string;
   icon: React.ReactNode;
-  description: string;
 }
 
 const categories: Category[] = [
-  {
-    id: "tree_fall",
-    label: "Tree Fall",
-    icon: <TreePine className="w-6 h-6" />,
-    description: "Fallen tree blocking road",
-  },
-  {
-    id: "landslide",
-    label: "Landslide",
-    icon: <Mountain className="w-6 h-6" />,
-    description: "Earth/rock slide onto road",
-  },
-  {
-    id: "flooding",
-    label: "Flooding",
-    icon: <Waves className="w-6 h-6" />,
-    description: "Water covering road",
-  },
-  {
-    id: "road_breakage",
-    label: "Road Damage",
-    icon: <Construction className="w-6 h-6" />,
-    description: "Cracks, potholes, surface damage",
-  },
-  {
-    id: "bridge_collapse",
-    label: "Bridge Collapse",
-    icon: <AlertTriangle className="w-6 h-6" />,
-    description: "Bridge damaged or collapsed",
-  },
-  {
-    id: "washout",
-    label: "Washout",
-    icon: <Waves className="w-6 h-6" />,
-    description: "Road washed away",
-  },
-  {
-    id: "blockage",
-    label: "Blockage",
-    icon: <CircleSlash className="w-6 h-6" />,
-    description: "Debris or obstacle blocking",
-  },
-  {
-    id: "collapse",
-    label: "Collapse",
-    icon: <Layers className="w-6 h-6" />,
-    description: "Road/structure collapsed",
-  },
-  {
-    id: "other",
-    label: "Other",
-    icon: <HelpCircle className="w-6 h-6" />,
-    description: "Other road issue",
-  },
+  { id: "tree_fall", icon: <TreePine className="w-6 h-6" /> },
+  { id: "landslide", icon: <Mountain className="w-6 h-6" /> },
+  { id: "flooding", icon: <Waves className="w-6 h-6" /> },
+  { id: "road_breakage", icon: <Construction className="w-6 h-6" /> },
+  { id: "bridge_collapse", icon: <AlertTriangle className="w-6 h-6" /> },
+  { id: "washout", icon: <Waves className="w-6 h-6" /> },
+  { id: "blockage", icon: <CircleSlash className="w-6 h-6" /> },
+  { id: "collapse", icon: <Layers className="w-6 h-6" /> },
+  { id: "other", icon: <HelpCircle className="w-6 h-6" /> },
 ];
 
 interface IncidentCategorySelectProps {
@@ -91,10 +45,12 @@ interface IncidentCategorySelectProps {
 }
 
 export function IncidentCategorySelect({ value, onChange }: IncidentCategorySelectProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="space-y-3">
       <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-        What type of incident? <span className="text-red-500">*</span>
+        {t("report:details.damageType")} <span className="text-red-500">*</span>
       </label>
       <div className="grid grid-cols-3 gap-2">
         {categories.map((category) => (
@@ -112,7 +68,7 @@ export function IncidentCategorySelect({ value, onChange }: IncidentCategorySele
           >
             {category.icon}
             <span className="text-xs font-medium text-center leading-tight">
-              {category.label}
+              {t(`damageTypes.${category.id}`)}
             </span>
           </button>
         ))}

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import clsx from "clsx";
 import { AlertCircle, Check, MapPin, Loader2, Navigation, Images } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,7 @@ interface ReportResult {
 
 export function ReportIncident() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [showCamera, setShowCamera] = useState(false);
 
   const { user } = useAuthStore();
@@ -216,29 +218,29 @@ export function ReportIncident() {
   const handleSubmit = async () => {
     // Validate required fields
     if (photos.length === 0) {
-      setSubmitError("Please take at least one photo");
+      setSubmitError(t("report:validation.photoRequired"));
       return;
     }
     if (!damageType) {
-      setSubmitError("Please select an incident category");
+      setSubmitError(t("report:validation.incidentTypeRequired"));
       return;
     }
     if (!latitude || !longitude) {
-      setSubmitError("Location is required. Please take a photo with GPS enabled.");
+      setSubmitError(t("report:validation.locationRequired"));
       return;
     }
     // For non-signed-in users, require name and email
     if (!user) {
       if (!anonymousName.trim()) {
-        setSubmitError("Please enter your name");
+        setSubmitError(t("report:validation.nameRequired"));
         return;
       }
       if (!anonymousEmail.trim()) {
-        setSubmitError("Please enter your email address");
+        setSubmitError(t("report:validation.emailRequired"));
         return;
       }
       if (!isValidEmail(anonymousEmail)) {
-        setSubmitError("Please enter a valid email address");
+        setSubmitError(t("report:validation.emailInvalid"));
         return;
       }
     }
@@ -260,7 +262,7 @@ export function ReportIncident() {
       });
 
       if (!uploadResponse.ok) {
-        throw new Error("Failed to upload photos");
+        throw new Error(t("report:submit.uploadError"));
       }
 
       const uploadResult: UploadResult = await uploadResponse.json();
@@ -297,7 +299,7 @@ export function ReportIncident() {
       });
 
       if (!reportResponse.ok) {
-        throw new Error("Failed to submit report");
+        throw new Error(t("report:submit.error"));
       }
 
       const reportResult: ReportResult = await reportResponse.json();
@@ -326,35 +328,35 @@ export function ReportIncident() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <CardTitle className="text-green-600">Report Submitted!</CardTitle>
+              <CardTitle className="text-green-600">{t("report:submit.success")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 text-center">
               {showVerificationMessage ? (
                 <>
                   <p className="text-gray-600 dark:text-gray-400">
-                    We've sent a verification email to:
+                    {t("report:submit.verificationSent")}
                   </p>
                   <p className="font-medium text-gray-900 dark:text-gray-100">
                     {anonymousEmail}
                   </p>
                   <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                     <p className="text-sm text-blue-800 dark:text-blue-200">
-                      Please check your email and click the verification link to confirm your report.
+                      {t("report:submit.checkEmail")}
                     </p>
                   </div>
                 </>
               ) : (
                 <p className="text-gray-600 dark:text-gray-400">
-                  Thank you for reporting this incident. Your report will be reviewed by our team.
+                  {t("report:submit.successMessage")}
                 </p>
               )}
 
               <div className="flex gap-3 justify-center pt-4">
                 <Button variant="outline" onClick={() => navigate("/")}>
-                  View Map
+                  {t("report:submit.viewMap")}
                 </Button>
                 <Button onClick={handleNewReport}>
-                  Report Another
+                  {t("report:submit.reportAnother")}
                 </Button>
               </div>
             </CardContent>
@@ -387,22 +389,22 @@ export function ReportIncident() {
   const readyForSubmit = hasPhotos && hasLocation && hasCategory && hasContactInfo;
 
   const submitBlocker = !hasPhotos
-    ? "Add at least one photo"
+    ? t("report:checklist.addPhoto")
     : !hasGeoPhoto
-      ? "Retake a photo with GPS"
+      ? t("report:checklist.retakeWithGps")
       : !hasCategory
-        ? "Select an incident type"
+        ? t("report:checklist.selectType")
         : !hasContactInfo
-          ? "Add a name and valid email"
+          ? t("report:checklist.addContact")
           : null;
 
   const alerts: { type: "error" | "warning"; text: string }[] = [];
   if (submitError) alerts.push({ type: "error", text: submitError });
-  if (!hasPhotos) alerts.push({ type: "warning", text: "Add at least one photo to start your report." });
+  if (!hasPhotos) alerts.push({ type: "warning", text: t("report:alerts.addPhoto") });
   if (hasPhotos && !hasGeoPhoto) {
     alerts.push({
       type: "error",
-      text: "We couldn't detect location from your photo. Enable GPS and retake, or allow location access.",
+      text: t("report:alerts.noGps"),
     });
   }
 
@@ -410,7 +412,7 @@ export function ReportIncident() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-md mx-auto px-4 pt-6">
-        <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Report Incident</h1>
+        <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{t("report:title")}</h1>
       </div>
 
       {/* Top alerts */}
@@ -446,7 +448,7 @@ export function ReportIncident() {
               }`}>
                 {hasPhotos ? "✓" : "1"}
               </span>
-              Take Photos of the Incident
+              {t("report:photos.title")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -463,13 +465,13 @@ export function ReportIncident() {
             {latitude && longitude && hasGeoPhoto && (
               <div className="mt-3 flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
                 <MapPin className="w-4 h-4" />
-                Location captured
+                {t("report:location.locationDetected")}
               </div>
             )}
 
             {!hasGeoPhoto && hasPhotos && (
               <div className="mt-3 text-xs text-gray-600 dark:text-gray-300">
-                We need at least one photo with GPS. Enable location for your camera, then retake.
+                {t("report:photos.gpsHint")}
               </div>
             )}
 
@@ -481,7 +483,7 @@ export function ReportIncident() {
                   className="flex items-center justify-center gap-2 text-sm text-primary-600 dark:text-primary-400 hover:underline"
                 >
                   <Images className="h-4 w-4" />
-                  Have existing photos? Upload in bulk
+                  {t("report:photos.bulkUpload")}
                 </Link>
               </div>
             )}
@@ -500,31 +502,31 @@ export function ReportIncident() {
                 }`}>
                   {province ? "✓" : <Navigation className="w-3 h-3" />}
                 </span>
-                Verify Location
+                {t("report:location.title")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {isLoadingLocation && (
                 <div className="flex items-center gap-2 text-sm text-gray-500">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Detecting location...
+                  {t("report:location.detectingLocation")}
                 </div>
               )}
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label htmlFor="province">Province</Label>
+                  <Label htmlFor="province">{t("report:location.province")}</Label>
                   <Select
                     value={province || ""}
                     onValueChange={(value) => setProvince(value || null)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select province" />
+                      <SelectValue placeholder={t("report:location.selectProvince")} />
                     </SelectTrigger>
                     <SelectContent>
                       {provinces.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
-                          {p.name}
+                          {t(`locations:provinces.${p.id}`, { defaultValue: p.name })}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -532,20 +534,20 @@ export function ReportIncident() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="district">District</Label>
+                  <Label htmlFor="district">{t("report:location.district")}</Label>
                   <Select
                     value={district || ""}
                     onValueChange={(value) => setDistrict(value || null)}
                     disabled={!province}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={province ? "Select district" : "Select province first"} />
+                      <SelectValue placeholder={province ? t("report:location.selectDistrict") : t("report:location.selectProvinceFirst")} />
                     </SelectTrigger>
                     <SelectContent>
                       {province &&
                         getDistrictsForProvince(province).map((d) => (
                           <SelectItem key={d.id} value={d.id}>
-                            {d.name}
+                            {t(`locations:districts.${d.id}`, { defaultValue: d.name })}
                           </SelectItem>
                         ))}
                     </SelectContent>
@@ -561,15 +563,15 @@ export function ReportIncident() {
               />
 
               <div className="space-y-2">
-                <Label htmlFor="locationName">Road / Location Name</Label>
+                <Label htmlFor="locationName">{t("report:location.roadNumber")}</Label>
                 <Input
                   id="locationName"
-                  placeholder="e.g., Kandy Road near Town Hall"
+                  placeholder={t("report:location.roadNumberPlaceholder")}
                   value={locationName}
                   onChange={(e) => setLocationName(e.target.value)}
                 />
                 <p className="text-xs text-gray-500">
-                  Auto-detected from GPS. Edit if needed.
+                  {t("report:location.autoDetected")}
                 </p>
               </div>
 
@@ -582,7 +584,7 @@ export function ReportIncident() {
                   rel="noopener noreferrer"
                   className="ml-2 text-primary-600 hover:underline"
                 >
-                  View on map
+                  {t("report:location.viewOnMap")}
                 </a>
               </div>
             </CardContent>
@@ -601,7 +603,7 @@ export function ReportIncident() {
               }`}>
                 {hasCategory ? "✓" : "2"}
               </span>
-              Incident Details
+              {t("report:details.title")}
             </CardTitle>
           </CardHeader>
           <CardContent className={clsx("space-y-6", !hasLocation && "opacity-60 pointer-events-none")}>
@@ -624,7 +626,7 @@ export function ReportIncident() {
                 className="w-4 h-4 rounded border-gray-300"
               />
               <Label htmlFor="singleLane" className="text-sm font-normal">
-                Single lane traffic possible
+                {t("report:details.singleLane")}
               </Label>
             </div>
 
@@ -638,111 +640,124 @@ export function ReportIncident() {
               />
               <div>
                 <Label htmlFor="safetyBarriers" className="text-sm font-normal">
-                  Needs safety barriers
+                  {t("report:details.needsBarriers")}
                 </Label>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Road is carefully usable but requires barriers
+                  {t("report:details.barriersHint")}
                 </p>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="blockedDistance">Blocked distance (meters)</Label>
+              <Label htmlFor="blockedDistance">{t("report:details.blockedDistance")}</Label>
               <Input
                 id="blockedDistance"
                 type="number"
-                placeholder="e.g., 50"
+                placeholder={t("report:details.blockedDistancePlaceholder")}
                 value={blockedDistanceMeters || ""}
                 onChange={(e) => setBlockedDistance(e.target.value ? Number(e.target.value) : null)}
               />
             </div>
+
+            {/* Additional Details - shown here for signed-in users since contact section is hidden */}
+            {user && (
+              <div className="space-y-2 pt-2">
+                <Label htmlFor="description">{t("report:details.additionalDetails")}</Label>
+                <Textarea
+                  id="description"
+                  placeholder={t("report:details.additionalDetailsPlaceholder")}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={3}
+                />
+              </div>
+            )}
           </CardContent>
           {!hasLocation && (
             <div className="absolute inset-0 rounded-xl bg-gray-900/30 backdrop-blur-[2px] flex items-center justify-center text-sm text-gray-100">
-              Complete the photo step with GPS to edit details.
+              {t("report:blockers.completePhoto")}
             </div>
           )}
         </Card>
 
-        {/* Step 3: Contact Info */}
-        <Card className="relative animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <span className={`w-6 h-6 rounded-full text-sm flex items-center justify-center ${
-                hasContactInfo
-                  ? "bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400"
-                  : "bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-400"
-              }`}>
-                {hasContactInfo ? "✓" : "3"}
-              </span>
-              Contact Info
-              {user && <span className="text-xs text-gray-500 font-normal">(optional)</span>}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className={clsx("space-y-4", (!hasLocation || !hasCategory) && "opacity-60 pointer-events-none")}>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              {user
-                ? "We pre-filled your details. You can edit before submitting."
-                : "We&apos;ll send you a verification link to confirm your report."}
-            </p>
+        {/* Step 3: Contact Info - Only shown for anonymous users */}
+        {!user && (
+          <Card className="relative animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <span className={`w-6 h-6 rounded-full text-sm flex items-center justify-center ${
+                  hasContactInfo
+                    ? "bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400"
+                    : "bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-400"
+                }`}>
+                  {hasContactInfo ? "✓" : "3"}
+                </span>
+                {t("report:contact.title")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className={clsx("space-y-4", (!hasLocation || !hasCategory) && "opacity-60 pointer-events-none")}>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {t("report:contact.verificationNote")}
+              </p>
 
-            <div className="space-y-2">
-              <Label htmlFor="name">
-                Your Name {!user && <span className="text-red-500">*</span>}
-              </Label>
-              <Input
-                id="name"
-                placeholder="Enter your name"
-                value={anonymousName}
-                onChange={(e) => setAnonymousName(e.target.value)}
-                required={!user}
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="name">
+                  {t("report:contact.name")} <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="name"
+                  placeholder={t("report:contact.namePlaceholder")}
+                  value={anonymousName}
+                  onChange={(e) => setAnonymousName(e.target.value)}
+                  required
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email">
-                Email {!user && <span className="text-red-500">*</span>}
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={anonymousEmail}
-                onChange={(e) => setAnonymousEmail(e.target.value)}
-                required={!user}
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">
+                  {t("report:contact.email")} <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder={t("report:contact.emailPlaceholder")}
+                  value={anonymousEmail}
+                  onChange={(e) => setAnonymousEmail(e.target.value)}
+                  required
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="contact">Phone Number</Label>
-              <Input
-                id="contact"
-                type="tel"
-                placeholder="07X XXX XXXX"
-                value={anonymousContact}
-                onChange={(e) => setAnonymousContact(e.target.value)}
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="contact">{t("report:contact.phone")}</Label>
+                <Input
+                  id="contact"
+                  type="tel"
+                  placeholder={t("report:contact.phonePlaceholder")}
+                  value={anonymousContact}
+                  onChange={(e) => setAnonymousContact(e.target.value)}
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="description">Additional Details</Label>
-              <Textarea
-                id="description"
-                placeholder="Describe the incident..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-              />
-            </div>
-          </CardContent>
-          {(!hasLocation || !hasCategory) && (
-            <div className="absolute inset-0 rounded-xl bg-gray-900/30 backdrop-blur-[2px] flex items-center justify-center text-sm text-gray-100 px-6 text-center">
-              Finish the photo and incident details steps to add your contact info.
-            </div>
-          )}
-        </Card>
+              <div className="space-y-2">
+                <Label htmlFor="description">{t("report:details.additionalDetails")}</Label>
+                <Textarea
+                  id="description"
+                  placeholder={t("report:details.additionalDetailsPlaceholder")}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={3}
+                />
+              </div>
+            </CardContent>
+            {(!hasLocation || !hasCategory) && (
+              <div className="absolute inset-0 rounded-xl bg-gray-900/30 backdrop-blur-[2px] flex items-center justify-center text-sm text-gray-100 px-6 text-center">
+                {t("report:blockers.completePhotoAndDetails")}
+              </div>
+            )}
+          </Card>
+        )}
 
-        {/* Step 4: Review & Submit */}
+        {/* Step 3 (signed-in) / Step 4 (anonymous): Review & Submit */}
         <Card className="animate-in fade-in slide-in-from-bottom-4 duration-300">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
@@ -751,18 +766,18 @@ export function ReportIncident() {
                   ? "bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400"
                   : "bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-400"
               }`}>
-                {readyForSubmit ? "✓" : "4"}
+                {readyForSubmit ? "✓" : user ? "3" : "4"}
               </span>
-              Review & Submit
+              {t("report:review.title")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <h3 className="text-sm font-medium text-gray-800 dark:text-gray-200">Checklist</h3>
+              <h3 className="text-sm font-medium text-gray-800 dark:text-gray-200">{t("report:review.checklist")}</h3>
               <div className="space-y-1.5">
-                <ChecklistRow label="Photo with GPS" done={hasPhotos && hasGeoPhoto} />
-                <ChecklistRow label="Incident type selected" done={hasCategory} />
-                <ChecklistRow label={user ? "Contact info (optional)" : "Name and email added"} done={hasContactInfo} />
+                <ChecklistRow label={t("report:review.photoWithGps")} done={hasPhotos && hasGeoPhoto} />
+                <ChecklistRow label={t("report:review.incidentSelected")} done={hasCategory} />
+                {!user && <ChecklistRow label={t("report:review.contactRequired")} done={hasContactInfo} />}
               </div>
             </div>
 
@@ -775,16 +790,16 @@ export function ReportIncident() {
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Submitting...
+                  {t("report:submit.submitting")}
                 </>
               ) : (
-                "Submit Report"
+                t("report:submit.button")
               )}
             </Button>
 
             {!readyForSubmit && submitBlocker && (
               <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                Complete: {submitBlocker}
+                {t("report:review.complete")}: {submitBlocker}
               </p>
             )}
           </CardContent>

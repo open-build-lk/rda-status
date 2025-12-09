@@ -1,0 +1,63 @@
+{
+  "title": "පරිපාලක උපකරණ පුවරුව",
+  "reports": {
+    "title": "වාර්තා",
+    "allReports": "සියලු වාර්තා",
+    "pendingReview": "සමාලෝචනය අපේක්ෂිත",
+    "verified": "සත්‍යාපිත",
+    "inProgress": "ක්‍රියාත්මක වෙමින්",
+    "resolved": "විසඳා ඇත",
+    "rejected": "ප්‍රතික්ෂේප කරන ලදී",
+    "classify": "වර්ගීකරණය කරන්න",
+    "verify": "සත්‍යාපනය කරන්න",
+    "reject": "ප්‍රතික්ෂේප කරන්න",
+    "resolve": "විසඳන්න",
+    "updateProgress": "ප්‍රගතිය යාවත්කාලීන කරන්න",
+    "viewDetails": "විස්තර බලන්න",
+    "noReports": "වාර්තා හමු නොවීය",
+    "classification": {
+      "needsClassification": "වර්ගීකරණය අවශ්‍යයි",
+      "autoClassified": "ස්වයංක්‍රීයව වර්ගීකරණය",
+      "classified": "වර්ගීකරණය කරන ලදී",
+      "legacy": "පැරණි",
+      "notApplicable": "අදාළ නොවේ"
+    }
+  },
+  "users": {
+    "title": "පරිශීලකයන්",
+    "allUsers": "සියලු පරිශීලකයන්",
+    "admins": "පරිපාලකයන්",
+    "officers": "නිලධාරීන්",
+    "citizens": "පුරවැසියන්",
+    "addUser": "පරිශීලකයෙකු එක් කරන්න",
+    "editUser": "පරිශීලකයා සංස්කරණය කරන්න",
+    "deleteUser": "පරිශීලකයා මකන්න",
+    "role": "භූමිකාව",
+    "status": "තත්ත්වය",
+    "lastActive": "අවසන් වරට ක්‍රියාකාරී"
+  },
+  "filters": {
+    "status": "තත්ත්වය",
+    "province": "පළාත",
+    "district": "දිස්ත්‍රික්කය",
+    "damageType": "හානි වර්ගය",
+    "dateRange": "දින පරාසය",
+    "clearFilters": "පෙරහන් ඉවත් කරන්න"
+  },
+  "actions": {
+    "approve": "අනුමත කරන්න",
+    "reject": "ප්‍රතික්ෂේප කරන්න",
+    "assign": "පවරන්න",
+    "reassign": "නැවත පවරන්න",
+    "close": "වසන්න",
+    "reopen": "නැවත විවෘත කරන්න"
+  },
+  "auditTrail": {
+    "title": "විගණන පටිපාටිය",
+    "statusChange": "තත්ත්වය වෙනස් විය",
+    "from": "සිට",
+    "to": "දක්වා",
+    "by": "විසින්",
+    "reason": "හේතුව"
+  }
+}

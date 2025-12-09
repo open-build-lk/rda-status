@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   MapPin,
   LogIn,
@@ -23,6 +24,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 interface NavItem {
   label: string;
@@ -67,6 +69,7 @@ const navItems: NavItem[] = [
 ];
 
 export function Header() {
+  const { t } = useTranslation();
   const { user, isInitialized, logout } = useAuthStore();
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
@@ -109,20 +112,23 @@ export function Header() {
           <Link to="/" className="flex items-center gap-1.5 sm:gap-2">
             <MapPin className="h-5 w-5 text-primary-600 sm:h-6 sm:w-6" />
             <span className="text-sm font-semibold sm:text-base">
-              Sri Lanka Road Status
+              {t("app.title")}
             </span>
           </Link>
         </div>
 
         {/* Right: Actions and Auth section */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1 sm:gap-2">
+          {/* Language Switcher - always visible */}
+          <LanguageSwitcher />
+
           {/* Report Incident button */}
           <Link
             to="/report"
             className="flex items-center gap-1 rounded-md bg-red-600 px-2 py-1.5 text-sm font-medium text-white transition-colors hover:bg-red-700 sm:px-3"
           >
             <AlertTriangle className="h-4 w-4" />
-            <span className="hidden sm:inline">Report</span>
+            <span className="hidden sm:inline">{t("nav.report")}</span>
           </Link>
 
           {!isInitialized ? (
@@ -143,7 +149,7 @@ export function Header() {
                 className="flex items-center gap-1 rounded-md px-2 py-1.5 text-sm text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 sm:px-3"
               >
                 <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline">Logout</span>
+                <span className="hidden sm:inline">{t("nav.logout")}</span>
               </button>
             </>
           ) : (
@@ -152,7 +158,7 @@ export function Header() {
               className="flex items-center gap-1 rounded-md bg-primary-600 px-2 py-1.5 text-sm font-medium text-white transition-colors hover:bg-primary-700 sm:px-3"
             >
               <LogIn className="h-4 w-4" />
-              <span className="hidden sm:inline">Login</span>
+              <span className="hidden sm:inline">{t("nav.login")}</span>
             </Link>
           )}
         </div>
