@@ -14,7 +14,15 @@
     "reports": "அறிக்கைகள்",
     "users": "பயனர்கள்",
     "bulkUpload": "தொகுப்பு பதிவேற்றம்",
-    "adminReports": "நிர்வாக அறிக்கைகள்"
+    "adminReports": "நிர்வாக அறிக்கைகள்",
+    "platform": "தளம்",
+    "administration": "நிர்வாகம்",
+    "quickActions": "விரைவு செயல்கள்",
+    "reportIncident": "சம்பவம் தெரிவி",
+    "citizenReports": "குடிமக்கள் அறிக்கைகள்",
+    "unverifiedReports": "உறுதிப்படுத்தாத அறிக்கைகள்",
+    "userManagement": "பயனர் மேலாண்மை",
+    "role": "பங்கு"
   },
   "buttons": {
     "save": "சேமி",
@@ -46,7 +54,10 @@
     "1": "குறைவு",
     "2": "நடுத்தரம்",
     "3": "அதிகம்",
-    "4": "முக்கியமான"
+    "4": "முக்கியமான",
+    "low": "குறை",
+    "med": "நடு",
+    "high": "அதி"
   },
   "damageTypes": {
     "tree_fall": "மரம் விழுதல்",
@@ -102,5 +113,53 @@
   "footer": {
     "dataSource": "தரவு மூலம்: சாலை அபிவிருத்தி அதிகாரசபை (RDA).",
     "lastUpdated": "கடைசியாக புதுப்பிக்கப்பட்டது: {{date}}"
+  },
+  "dashboard": {
+    "totalReports": "மொத்த அறிக்கைகள்",
+    "resolved": "தீர்க்கப்பட்டது",
+    "inProgress": "செயலில் உள்ளது",
+    "pending": "நிலுவையில்",
+    "avgResolution": "சராசரி தீர்வு",
+    "days": "நாட்கள்",
+    "day": "நாள்",
+    "recentlyFixed": "சமீபத்தில் சரி செய்யப்பட்டது",
+    "activeWork": "செயலில் பணிகள்",
+    "byDistrict": "மாவட்டம் வாரியாக",
+    "complete": "முழுமை",
+    "fixedIn": "{{days}} நாட்களில் சரி செய்யப்பட்டது",
+    "all": "அனைத்தும்",
+    "filterByStatus": "நிலை மூலம் வடிகட்டு"
+  },
+  "admin": {
+    "citizenReports": "குடிமக்கள் அறிக்கைகள்",
+    "province": "மாகாணம்",
+    "district": "மாவட்டம்",
+    "allProvinces": "அனைத்து மாகாணங்கள்",
+    "allDistricts": "அனைத்து மாவட்டங்கள்",
+    "organization": "நிறுவனம்",
+    "allOrganizations": "அனைத்து நிறுவனங்கள்",
+    "search": "தேடு...",
+    "showingReports": "{{total}} இல் {{filtered}} காட்டப்படுகிறது",
+    "noReportsFound": "உங்கள் வடிப்பான்களுக்கு பொருந்தும் அறிக்கைகள் இல்லை",
+    "classify": "வகைப்படுத்து",
+    "verify": "உறுதிப்படுத்து",
+    "reject": "நிராகரி",
+    "startProgress": "தொடங்கு",
+    "markDone": "முடிந்தது",
+    "updateProgress": "முன்னேற்றம்",
+    "reopen": "மீண்டும்",
+    "viewDetails": "விவரங்களைக் காண",
+    "estCost": "மதிப்பிட்ட செலவு",
+    "hoursAgo": "{{count}} மணி நேரத்திற்கு முன்",
+    "daysAgo": "{{count}} நாட்களுக்கு முன்",
+    "page": "பக்கம்",
+    "of": "இல்"
+  },
+  "classification": {
+    "pending": "வகைப்படுத்தல் தேவை",
+    "auto_classified": "தானியக்க-வகைப்படுத்தல்",
+    "manual_classified": "வகைப்படுத்தப்பட்டது",
+    "legacy": "பழைய",
+    "unclassifiable": "பொருந்தாது"
   }
 }

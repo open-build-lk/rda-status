@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Home,
   Shield,
@@ -36,49 +37,36 @@ import {
 } from "@/components/ui/collapsible";
 
 interface NavItem {
-  title: string;
+  titleKey: string;
   url: string;
   icon: React.ComponentType<{ className?: string }>;
   roles?: string[];
-  items?: { title: string; url: string }[];
+  items?: { titleKey: string; url: string }[];
 }
 
 const platformItems: NavItem[] = [
   {
-    title: "Home",
+    titleKey: "nav.home",
     url: "/",
     icon: Home,
   },
-  // Dashboard and Projects hidden for now
-  // {
-  //   title: "Dashboard",
-  //   url: "/dashboard",
-  //   icon: LayoutDashboard,
-  //   roles: ["field_officer", "planner", "admin", "super_admin", "stakeholder"],
-  // },
-  // {
-  //   title: "Projects",
-  //   url: "/projects",
-  //   icon: FolderKanban,
-  //   roles: ["planner", "admin", "super_admin", "stakeholder"],
-  // },
 ];
 
 const adminItems: NavItem[] = [
   {
-    title: "Citizen Reports",
+    titleKey: "nav.citizenReports",
     url: "/admin/reports",
     icon: Shield,
     roles: ["field_officer", "planner", "admin", "super_admin"],
   },
   {
-    title: "Unverified Reports",
+    titleKey: "nav.unverifiedReports",
     url: "/admin/reports/unverified",
     icon: MapPinOff,
     roles: ["field_officer", "planner", "admin", "super_admin"],
   },
   {
-    title: "User Management",
+    titleKey: "nav.userManagement",
     url: "/admin/users",
     icon: Users,
     roles: ["super_admin"],
@@ -86,6 +74,7 @@ const adminItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
+  const { t } = useTranslation();
   const { user, logout } = useAuthStore();
   const location = useLocation();
   const userRole = user?.role || "citizen";
@@ -149,19 +138,19 @@ export function AppSidebar() {
       <SidebarContent>
         {/* Platform Navigation */}
         <SidebarGroup>
-          <SidebarGroupLabel>Platform</SidebarGroupLabel>
+          <SidebarGroupLabel>{t("nav.platform")}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {visiblePlatformItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.titleKey}>
                   <SidebarMenuButton
                     asChild
                     isActive={location.pathname === item.url}
-                    tooltip={item.title}
+                    tooltip={t(item.titleKey)}
                   >
                     <Link to={item.url} onClick={handleLinkClick}>
                       <item.icon className="size-4" />
-                      <span>{item.title}</span>
+                      <span>{t(item.titleKey)}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -173,19 +162,19 @@ export function AppSidebar() {
         {/* Admin Section */}
         {visibleAdminItems.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel>Administration</SidebarGroupLabel>
+            <SidebarGroupLabel>{t("nav.administration")}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {visibleAdminItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
+                  <SidebarMenuItem key={item.titleKey}>
                     <SidebarMenuButton
                       asChild
                       isActive={location.pathname === item.url}
-                      tooltip={item.title}
+                      tooltip={t(item.titleKey)}
                     >
                       <Link to={item.url} onClick={handleLinkClick}>
                         <item.icon className="size-4" />
-                        <span>{item.title}</span>
+                        <span>{t(item.titleKey)}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -197,19 +186,19 @@ export function AppSidebar() {
 
         {/* Quick Actions */}
         <SidebarGroup>
-          <SidebarGroupLabel>Quick Actions</SidebarGroupLabel>
+          <SidebarGroupLabel>{t("nav.quickActions")}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
                   isActive={location.pathname === "/report"}
-                  tooltip="Report Incident"
+                  tooltip={t("nav.reportIncident")}
                   className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20"
                 >
                   <Link to="/report" onClick={handleLinkClick}>
                     <AlertTriangle className="size-4" />
-                    <span>Report Incident</span>
+                    <span>{t("nav.reportIncident")}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -245,7 +234,7 @@ export function AppSidebar() {
                 <SidebarMenuSub>
                   <SidebarMenuSubItem>
                     <div className="px-2 py-1.5 text-xs text-gray-500">
-                      Role: <span className="capitalize">{userRole.replace("_", " ")}</span>
+                      {t("nav.role")}: <span className="capitalize">{userRole.replace("_", " ")}</span>
                     </div>
                   </SidebarMenuSubItem>
                   <SidebarMenuSubItem>
@@ -255,7 +244,7 @@ export function AppSidebar() {
                         className="w-full text-red-600 hover:text-red-700 dark:text-red-400"
                       >
                         <LogOut className="size-4" />
-                        <span>Log out</span>
+                        <span>{t("nav.logout")}</span>
                       </button>
                     </SidebarMenuSubButton>
                   </SidebarMenuSubItem>

@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   useReactTable,
   getCoreRowModel,
@@ -149,6 +150,7 @@ const passabilityOptions = [
 const columnHelper = createColumnHelper<Report>();
 
 export function AdminReports() {
+  const { t } = useTranslation();
   const { user } = useAuthStore();
   const userRole = user?.role || "citizen";
   const [reports, setReports] = useState<Report[]>([]);
@@ -713,7 +715,7 @@ export function AdminReports() {
       {/* Header */}
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Citizen Reports</h1>
+          <h1 className="text-2xl font-bold">{t("admin.citizenReports")}</h1>
           <div className="flex items-center gap-2">
             {/* View toggle */}
             <div className="hidden sm:flex items-center border rounded-lg p-0.5">
@@ -752,10 +754,10 @@ export function AdminReports() {
               }}
             >
               <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Province" />
+                <SelectValue placeholder={t("admin.province")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Provinces</SelectItem>
+                <SelectItem value="all">{t("admin.allProvinces")}</SelectItem>
                 {provinces.map((p) => (
                   <SelectItem key={p.id} value={p.name}>
                     {p.name}
@@ -771,10 +773,10 @@ export function AdminReports() {
                 onValueChange={(value) => setSelectedDistrict(value === "all" ? "" : value)}
               >
                 <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="District" />
+                  <SelectValue placeholder={t("admin.district")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Districts</SelectItem>
+                  <SelectItem value="all">{t("admin.allDistricts")}</SelectItem>
                   {availableDistricts.map((d) => (
                     <SelectItem key={d.id} value={d.name}>
                       {d.name}
@@ -792,10 +794,10 @@ export function AdminReports() {
               >
                 <SelectTrigger className="w-[140px]">
                   <Building2 className="w-4 h-4 mr-1 opacity-50" />
-                  <SelectValue placeholder="Organization" />
+                  <SelectValue placeholder={t("admin.organization")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Organizations</SelectItem>
+                  <SelectItem value="all">{t("admin.allOrganizations")}</SelectItem>
                   {organizations.map((org) => (
                     <SelectItem key={org.id} value={org.id}>
                       {org.code}
@@ -807,7 +809,7 @@ export function AdminReports() {
 
             {/* Search */}
             <Input
-              placeholder="Search..."
+              placeholder={t("admin.search")}
               value={globalFilter}
               onChange={(e) => setGlobalFilter(e.target.value)}
               className="flex-1 max-w-[200px]"
@@ -825,7 +827,7 @@ export function AdminReports() {
 
       {/* Stats */}
       <div className="text-sm text-gray-500">
-        Showing {filteredReports.length} of {reports.length} reports
+        {t("admin.showingReports", { filtered: filteredReports.length, total: reports.length })}
       </div>
 
       {/* Card View (Mobile-first) */}
@@ -849,7 +851,7 @@ export function AdminReports() {
           ))}
           {filteredReports.length === 0 && (
             <div className="col-span-full text-center py-12 text-gray-500">
-              No reports found matching your filters
+              {t("admin.noReportsFound")}
             </div>
           )}
         </div>
@@ -933,7 +935,7 @@ export function AdminReports() {
           {/* Pagination */}
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-500">
-              Page {table.getState().pagination.pageIndex + 1} of{" "}
+              {t("admin.page")} {table.getState().pagination.pageIndex + 1} {t("admin.of")}{" "}
               {table.getPageCount()}
             </div>
             <div className="flex items-center gap-2">

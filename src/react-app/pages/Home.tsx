@@ -1,63 +1,121 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   AlertTriangle,
-  MapPin,
-  Mountain,
-  Droplets,
   List,
   X,
+  CheckCircle,
+  Clock,
+  Wrench,
 } from "lucide-react";
 import { DisasterMap } from "@/components/map";
 import { RoadTable } from "@/components/road-table";
-import { useRoadSegments } from "@/hooks/useRoadSegments";
-import { useCitizenIncidents } from "@/hooks/useCitizenIncidents";
+import { usePublicMetrics } from "@/hooks/usePublicMetrics";
+import { useMapViewStore, StatusFilter } from "@/stores/mapView";
+import { cn } from "@/lib/utils";
 
 export function Home() {
   const { t } = useTranslation();
   const [showMobileList, setShowMobileList] = useState(false);
-  const { segments } = useRoadSegments();
-  const { incidents } = useCitizenIncidents();
+  const { metrics } = usePublicMetrics();
+  const { statusFilter, setStatusFilter } = useMapViewStore();
 
-  // Compute stats from fetched road segments + citizen incidents
-  const stats = useMemo(() => {
-    // Count by damage type from both sources
-    const damageTypes: Record<string, number> = {};
+  // Helper for clickable stat items
+  const StatButton = ({
+    filter,
+    icon: Icon,
+    value,
+    label,
+    bgColor,
+    activeBgColor,
+    textColor,
+    className,
+  }: {
+    filter: StatusFilter;
+    icon: React.ElementType;
+    value: number | string;
+    label: string;
+    bgColor: string;
+    activeBgColor: string;
+    textColor: string;
+    className?: string;
+  }) => {
+    const isActive = statusFilter === filter;
+    return (
+      <button
+        onClick={() => setStatusFilter(filter)}
+        className={cn(
+          "flex items-center gap-1 rounded-lg px-1 py-1 transition-all sm:gap-2 sm:px-2",
+          isActive
+            ? `ring-2 ring-offset-1 ${activeBgColor}`
+            : "hover:bg-gray-100 dark:hover:bg-gray-800",
+          className
+        )}
+      >
+        <div
+          className={cn(
+            "flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg sm:h-10 sm:w-10",
+            bgColor
+          )}
+        >
+          <Icon className={cn("h-3.5 w-3.5 sm:h-5 sm:w-5", textColor)} />
+        </div>
+        <div>
+          <p className="text-base font-bold text-gray-900 dark:text-white sm:text-2xl">
+            {value}
+          </p>
+          <p className="whitespace-nowrap text-[9px] text-gray-500 dark:text-gray-400 sm:text-xs">
+            {label}
+          </p>
+        </div>
+      </button>
+    );
+  };
 
-    // Count from road segments
-    segments.forEach((seg) => {
-      const type = seg.damageType || "other";
-      damageTypes[type] = (damageTypes[type] || 0) + 1;
-    });
-
-    // Count from citizen incidents
-    incidents.forEach((inc) => {
-      const type = inc.damageType || "other";
-      damageTypes[type] = (damageTypes[type] || 0) + 1;
-    });
-
-    // Count by severity (road segments only, incidents don't have severity)
-    const severityCounts = { critical: 0, high: 0, medium: 0, low: 0 };
-    segments.forEach((seg) => {
-      const severity = seg.severity || 2;
-      if (severity >= 4) severityCounts.critical++;
-      else if (severity === 3) severityCounts.high++;
-      else if (severity === 2) severityCounts.medium++;
-      else severityCounts.low++;
-    });
-
-    // Unique provinces (road segments only)
-    const provinces = new Set(segments.map((seg) => seg.province));
-
-    return {
-      totalBlocked: segments.length + incidents.length,
-      provinces: provinces.size,
-      flooding: damageTypes.flooding || 0,
-      landslides: damageTypes.landslide || 0,
-      critical: severityCounts.critical,
-      high: severityCounts.high,
-    };
-  }, [segments, incidents]);
+  // Static stat display (non-clickable)
+  const StatDisplay = ({
+    icon: Icon,
+    value,
+    label,
+    suffix,
+    bgColor,
+    textColor,
+    className,
+  }: {
+    icon: React.ElementType;
+    value: number | string;
+    label: string;
+    suffix?: string;
+    bgColor: string;
+    textColor: string;
+    className?: string;
+  }) => {
+    return (
+      <div className={cn("flex items-center gap-1 sm:gap-2", className)}>
+        <div
+          className={cn(
+            "flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg sm:h-10 sm:w-10",
+            bgColor
+          )}
+        >
+          <Icon className={cn("h-3.5 w-3.5 sm:h-5 sm:w-5", textColor)} />
+        </div>
+        <div>
+          <p className="text-base font-bold text-gray-900 dark:text-white sm:text-2xl">
+            {value}
+            {suffix && (
+              <span className="ml-0.5 text-xs font-normal text-gray-500">
+                {suffix}
+              </span>
+            )}
+          </p>
+          <p className="whitespace-nowrap text-[9px] text-gray-500 dark:text-gray-400 sm:text-xs">
+            {label}
+          </p>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="flex h-full max-h-full flex-col overflow-hidden">
@@ -65,65 +123,60 @@ export function Home() {
       <div className="flex-shrink-0 border-b border-gray-200 bg-gray-50 px-2 py-2 dark:border-gray-800 dark:bg-gray-900 sm:px-4 sm:py-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 overflow-x-auto sm:gap-4">
-            {/* Total blocked */}
-            <div className="flex items-center gap-1 sm:gap-2">
-              <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/30 sm:h-10 sm:w-10">
-                <AlertTriangle className="h-3.5 w-3.5 text-red-600 dark:text-red-400 sm:h-5 sm:w-5" />
-              </div>
-              <div>
-                <p className="text-base font-bold text-gray-900 dark:text-white sm:text-2xl">
-                  {stats.totalBlocked}
-                </p>
-                <p className="whitespace-nowrap text-[9px] text-gray-500 dark:text-gray-400 sm:text-xs">
-                  {t("report:home.roadsAffected")}
-                </p>
-              </div>
-            </div>
+            {/* Total Reports - clickable "all" filter */}
+            <StatButton
+              filter="all"
+              icon={AlertTriangle}
+              value={metrics?.summary.totalReports ?? 0}
+              label={t("common:dashboard.totalReports", "Total Reports")}
+              bgColor="bg-gray-200 dark:bg-gray-700"
+              activeBgColor="ring-gray-500 bg-gray-100 dark:bg-gray-600"
+              textColor="text-gray-700 dark:text-gray-300"
+            />
 
-            {/* Provinces */}
-            <div className="flex items-center gap-1 sm:gap-2">
-              <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30 sm:h-10 sm:w-10">
-                <MapPin className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400 sm:h-5 sm:w-5" />
-              </div>
-              <div>
-                <p className="text-base font-bold text-gray-900 dark:text-white sm:text-2xl">
-                  {stats.provinces}
-                </p>
-                <p className="whitespace-nowrap text-[9px] text-gray-500 dark:text-gray-400 sm:text-xs">
-                  {t("report:home.provinces")}
-                </p>
-              </div>
-            </div>
+            {/* Pending - clickable filter */}
+            <StatButton
+              filter="pending"
+              icon={AlertTriangle}
+              value={metrics?.summary.pending ?? 0}
+              label={t("common:dashboard.pending", "Pending")}
+              bgColor="bg-red-100 dark:bg-red-900/30"
+              activeBgColor="ring-red-500 bg-red-50 dark:bg-red-900/40"
+              textColor="text-red-600 dark:text-red-400"
+            />
 
-            {/* Flooding */}
-            <div className="flex items-center gap-1 sm:gap-2">
-              <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-cyan-100 dark:bg-cyan-900/30 sm:h-10 sm:w-10">
-                <Droplets className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400 sm:h-5 sm:w-5" />
-              </div>
-              <div>
-                <p className="text-base font-bold text-gray-900 dark:text-white sm:text-2xl">
-                  {stats.flooding}
-                </p>
-                <p className="whitespace-nowrap text-[9px] text-gray-500 dark:text-gray-400 sm:text-xs">
-                  {t("report:home.flooding")}
-                </p>
-              </div>
-            </div>
+            {/* In Progress - clickable filter */}
+            <StatButton
+              filter="in_progress"
+              icon={Wrench}
+              value={metrics?.summary.inProgress ?? 0}
+              label={t("common:dashboard.inProgress", "In Progress")}
+              bgColor="bg-orange-100 dark:bg-orange-900/30"
+              activeBgColor="ring-orange-500 bg-orange-50 dark:bg-orange-900/40"
+              textColor="text-orange-600 dark:text-orange-400"
+            />
 
-            {/* Landslides */}
-            <div className="flex items-center gap-1 sm:gap-2">
-              <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/30 sm:h-10 sm:w-10">
-                <Mountain className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 sm:h-5 sm:w-5" />
-              </div>
-              <div>
-                <p className="text-base font-bold text-gray-900 dark:text-white sm:text-2xl">
-                  {stats.landslides}
-                </p>
-                <p className="whitespace-nowrap text-[9px] text-gray-500 dark:text-gray-400 sm:text-xs">
-                  {t("report:home.landslides")}
-                </p>
-              </div>
-            </div>
+            {/* Resolved - clickable filter */}
+            <StatButton
+              filter="resolved"
+              icon={CheckCircle}
+              value={metrics?.summary.resolved ?? 0}
+              label={t("common:dashboard.resolved", "Resolved")}
+              bgColor="bg-green-100 dark:bg-green-900/30"
+              activeBgColor="ring-green-500 bg-green-50 dark:bg-green-900/40"
+              textColor="text-green-600 dark:text-green-400"
+            />
+
+            {/* Avg Resolution Time - static display */}
+            <StatDisplay
+              icon={Clock}
+              value={metrics?.performance.avgResolutionTimeDays ?? "-"}
+              suffix="d"
+              label={t("common:dashboard.avgResolution", "Avg Resolution")}
+              bgColor="bg-purple-100 dark:bg-purple-900/30"
+              textColor="text-purple-600 dark:text-purple-400"
+              className="hidden sm:flex"
+            />
           </div>
 
           {/* Mobile list toggle button */}

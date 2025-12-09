@@ -63,15 +63,61 @@ function createDamageIcon(
   });
 }
 
+// Status colors for markers
+const STATUS_COLORS = {
+  verified: "#DC2626",    // Red - pending/verified
+  in_progress: "#F97316", // Orange - in progress
+  resolved: "#16A34A",    // Green - resolved
+  new: "#DC2626",         // Red - new
+};
+
 // Create marker icon for citizen incidents (point-based, not segment-based)
-function createIncidentIcon(damageType: string): DivIcon {
+function createIncidentIcon(
+  damageType: string,
+  status: string = "verified",
+  progressPercent?: number
+): DivIcon {
   const config = DAMAGE_ICONS[damageType] || DAMAGE_ICONS.other;
+  const borderColor = STATUS_COLORS[status as keyof typeof STATUS_COLORS] || STATUS_COLORS.verified;
+
+  // For resolved items, show a checkmark badge
+  const badge = status === "resolved"
+    ? `<div style="
+        position: absolute;
+        top: -4px;
+        right: -4px;
+        background: #16A34A;
+        border-radius: 50%;
+        width: 14px;
+        height: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        color: white;
+        border: 1px solid white;
+      ">✓</div>`
+    : status === "in_progress" && progressPercent
+      ? `<div style="
+          position: absolute;
+          top: -6px;
+          right: -6px;
+          background: #F97316;
+          border-radius: 8px;
+          padding: 1px 4px;
+          font-size: 8px;
+          color: white;
+          font-weight: bold;
+          border: 1px solid white;
+        ">${progressPercent}%</div>`
+      : "";
 
   return new DivIcon({
     html: `
       <div style="
+        position: relative;
         background: white;
-        border: 3px solid #7C3AED;
+        border: 3px solid ${borderColor};
         border-radius: 50%;
         width: 32px;
         height: 32px;
@@ -79,10 +125,11 @@ function createIncidentIcon(damageType: string): DivIcon {
         align-items: center;
         justify-content: center;
         font-size: 16px;
-        box-shadow: 0 2px 8px rgba(124, 58, 237, 0.4);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         cursor: pointer;
       ">
         ${config.emoji}
+        ${badge}
       </div>
     `,
     className: "incident-marker",
@@ -119,12 +166,24 @@ function MapController() {
 // Re-export useRoadSegments from the hook module for backwards compatibility with RoadTable
 export { useRoadSegments } from "@/hooks/useRoadSegments";
 
+// Helper to check if incident matches status filter
+function matchesStatusFilter(status: string, filter: string): boolean {
+  if (filter === "all") return true;
+  if (filter === "pending") return status === "verified" || status === "new";
+  return status === filter;
+}
+
 export function DisasterMap() {
   // Sri Lanka center coordinates
   const center: LatLngExpression = [7.8731, 80.7718];
   const { segments, isLoading: segmentsLoading, error: segmentsError } = useRoadSegments();
   const { incidents, isLoading: incidentsLoading, error: incidentsError } = useCitizenIncidents();
-  const { selectedSegmentId } = useMapViewStore();
+  const { selectedSegmentId, statusFilter } = useMapViewStore();
+
+  // Filter incidents by status
+  const filteredIncidents = incidents.filter((inc) =>
+    matchesStatusFilter(inc.status, statusFilter)
+  );
 
   const isLoading = segmentsLoading || incidentsLoading;
   const error = segmentsError || incidentsError;
@@ -228,12 +287,16 @@ export function DisasterMap() {
           );
         })}
 
-        {/* Citizen incident markers (point-based, purple border) */}
-        {incidents.map((incident) => (
+        {/* Citizen incident markers (status-colored borders) */}
+        {filteredIncidents.map((incident) => (
           <Marker
             key={`incident-${incident.id}`}
             position={incident.position}
-            icon={createIncidentIcon(incident.damageType)}
+            icon={createIncidentIcon(
+              incident.damageType,
+              incident.status,
+              incident.progressPercent
+            )}
           >
             <Popup>
               <div className="min-w-48">
@@ -241,6 +304,16 @@ export function DisasterMap() {
                   <span className="rounded bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">
                     Citizen Report
                   </span>
+                  {incident.status === "resolved" && (
+                    <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                      Resolved
+                    </span>
+                  )}
+                  {incident.status === "in_progress" && (
+                    <span className="rounded bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-700">
+                      In Progress {incident.progressPercent > 0 && `(${incident.progressPercent}%)`}
+                    </span>
+                  )}
                 </div>
                 <h3 className="mb-1 text-base font-bold capitalize">
                   {incident.damageType.replace("_", " ")}
@@ -251,6 +324,14 @@ export function DisasterMap() {
                   {incident.isSingleLane && " (Single lane)"}
                 </p>
                 <p className="mb-2 text-sm">{incident.description}</p>
+                {incident.status === "resolved" && incident.resolvedAt && (
+                  <p className="mb-1 text-xs font-medium text-green-600">
+                    Fixed in {Math.round(
+                      (new Date(incident.resolvedAt).getTime() - new Date(incident.createdAt).getTime()) /
+                      (1000 * 60 * 60 * 24)
+                    )} days
+                  </p>
+                )}
                 <p className="text-xs text-gray-500">
                   Reported: {new Date(incident.createdAt).toLocaleDateString()}
                 </p>

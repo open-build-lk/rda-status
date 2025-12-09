@@ -117,6 +117,9 @@ export const damageReports = sqliteTable(
     // Timestamps
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+    // Resolution tracking timestamps
+    resolvedAt: integer("resolved_at", { mode: "timestamp" }),
+    inProgressAt: integer("in_progress_at", { mode: "timestamp" }),
   },
   (table) => [
     index("reports_status_idx").on(table.status),

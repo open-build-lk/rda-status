@@ -6,6 +6,8 @@ import { Footer } from "./Footer";
 import { Separator } from "@/components/ui/separator";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { useLocation, useNavigate } from "react-router-dom";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -68,6 +70,11 @@ function SidebarContent({ children }: { children: React.ReactNode }) {
               Sri Lanka Road Status
             </span>
           )}
+          {/* Right side: Theme toggle and Language switcher */}
+          <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle />
+            <LanguageSwitcher />
+          </div>
         </div>
       </header>
       <main className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">

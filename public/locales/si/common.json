@@ -14,7 +14,15 @@
     "reports": "වාර්තා",
     "users": "පරිශීලකයන්",
     "bulkUpload": "එකවර උඩුගත",
-    "adminReports": "පරිපාලක වාර්තා"
+    "adminReports": "පරිපාලක වාර්තා",
+    "platform": "වේදිකාව",
+    "administration": "පරිපාලනය",
+    "quickActions": "ක්ෂණික ක්‍රියා",
+    "reportIncident": "සිදුවීම වාර්තා කරන්න",
+    "citizenReports": "පුරවැසි වාර්තා",
+    "unverifiedReports": "තහවුරු නොකළ වාර්තා",
+    "userManagement": "පරිශීලක කළමනාකරණය",
+    "role": "තනතුර"
   },
   "buttons": {
     "save": "සුරකින්න",
@@ -46,10 +54,13 @@
     "1": "අඩු",
     "2": "මධ්‍යම",
     "3": "ඉහළ",
-    "4": "තීරණාත්මක"
+    "4": "තීරණාත්මක",
+    "low": "අඩු",
+    "med": "මධ්‍ය",
+    "high": "ඉහළ"
   },
   "damageTypes": {
-    "tree_fall": "ගස් කඩා වැටීම",,
+    "tree_fall": "ගස් කඩා වැටීම",
     "tree_fall_desc": "මාර්ගය අවහිර කරමින් වැටුණු ගස",
     "landslide": "නාය යෑම",
     "landslide_desc": "මාර්ගයට පස්/ගල් කඩා වැටීම",
@@ -102,5 +113,53 @@
   "footer": {
     "dataSource": "දත්ත මූලාශ්‍රය: මාර්ග සංවර්ධන අධිකාරිය (RDA).",
     "lastUpdated": "අවසන් යාවත්කාලීනය: {{date}}"
+  },
+  "dashboard": {
+    "totalReports": "මුළු වාර්තා",
+    "resolved": "විසඳා ඇත",
+    "inProgress": "ක්‍රියාත්මකයි",
+    "pending": "බලාපොරොත්තු",
+    "avgResolution": "සාමාන්‍ය විසඳුම",
+    "days": "දින",
+    "day": "දිනය",
+    "recentlyFixed": "මෑතදී නිරාකරණය",
+    "activeWork": "ක්‍රියාකාරී අලුත්වැඩියා",
+    "byDistrict": "දිස්ත්‍රික් අනුව",
+    "complete": "සම්පූර්ණයි",
+    "fixedIn": "දින {{days}} කින් නිරාකරණය",
+    "all": "සියල්ල",
+    "filterByStatus": "තත්ත්වය අනුව පෙරහන"
+  },
+  "admin": {
+    "citizenReports": "පුරවැසි වාර්තා",
+    "province": "පළාත",
+    "district": "දිස්ත්‍රික්කය",
+    "allProvinces": "සියලුම පළාත්",
+    "allDistricts": "සියලුම දිස්ත්‍රික්ක",
+    "organization": "සංවිධානය",
+    "allOrganizations": "සියලුම සංවිධාන",
+    "search": "සොයන්න...",
+    "showingReports": "{{total}} න් {{filtered}} ක් පෙන්වයි",
+    "noReportsFound": "ඔබගේ පෙරහන්වලට ගැලපෙන වාර්තා හමු නොවීය",
+    "classify": "වර්ගීකරණය",
+    "verify": "තහවුරු",
+    "reject": "ප්‍රතික්ෂේප",
+    "startProgress": "ආරම්භ කරන්න",
+    "markDone": "අවසන්",
+    "updateProgress": "ප්‍රගතිය",
+    "reopen": "ආපසු",
+    "viewDetails": "විස්තර බලන්න",
+    "estCost": "අනුමාන වියදම",
+    "hoursAgo": "පැය {{count}} කට පෙර",
+    "daysAgo": "දින {{count}} කට පෙර",
+    "page": "පිටුව",
+    "of": "කින්"
+  },
+  "classification": {
+    "pending": "වර්ගීකරණය අවශ්‍යයි",
+    "auto_classified": "ස්වයං-වර්ගීකරණය",
+    "manual_classified": "වර්ගීකරණය කළා",
+    "legacy": "පැරණි",
+    "unclassifiable": "අදාළ නැත"
   }
 }
