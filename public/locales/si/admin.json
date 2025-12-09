@@ -3,7 +3,7 @@
   "reports": {
     "title": "වාර්තා",
     "allReports": "සියලු වාර්තා",
-    "pendingReview": "සමාලෝචනය අපේක්ෂිත",
+    "pendingReview": "පොරොත්තු",
     "verified": "සත්‍යාපිත",
     "inProgress": "ක්‍රියාත්මක වෙමින්",
     "resolved": "විසඳා ඇත",
@@ -16,7 +16,7 @@
     "viewDetails": "විස්තර බලන්න",
     "noReports": "වාර්තා හමු නොවීය",
     "classification": {
-      "needsClassification": "වර්ගීකරණය අවශ්‍යයි",
+      "needsClassification": "වර්ග කරන්න",
       "autoClassified": "ස්වයංක්‍රීයව වර්ගීකරණය",
       "classified": "වර්ගීකරණය කරන ලදී",
       "legacy": "පැරණි",
@@ -29,7 +29,7 @@
     "admins": "පරිපාලකයන්",
     "officers": "නිලධාරීන්",
     "citizens": "පුරවැසියන්",
-    "addUser": "පරිශීලකයෙකු එක් කරන්න",
+    "addUser": "නව පරිශීලක",
     "editUser": "පරිශීලකයා සංස්කරණය කරන්න",
     "deleteUser": "පරිශීලකයා මකන්න",
     "role": "භූමිකාව",
@@ -42,7 +42,7 @@
     "district": "දිස්ත්‍රික්කය",
     "damageType": "හානි වර්ගය",
     "dateRange": "දින පරාසය",
-    "clearFilters": "පෙරහන් ඉවත් කරන්න"
+    "clearFilters": "ඉවත් කරන්න"
   },
   "actions": {
     "approve": "අනුමත කරන්න",

@@ -3,7 +3,7 @@
   "reports": {
     "title": "அறிக்கைகள்",
     "allReports": "அனைத்து அறிக்கைகள்",
-    "pendingReview": "மதிப்பாய்வு நிலுவையில்",
+    "pendingReview": "நிலுவையில்",
     "verified": "சரிபார்க்கப்பட்டது",
     "inProgress": "செயல்பாட்டில்",
     "resolved": "தீர்க்கப்பட்டது",
@@ -16,7 +16,7 @@
     "viewDetails": "விவரங்களைப் பார்",
     "noReports": "அறிக்கைகள் இல்லை",
     "classification": {
-      "needsClassification": "வகைப்படுத்தல் தேவை",
+      "needsClassification": "வகை தேவை",
       "autoClassified": "தானியங்கி வகைப்படுத்தப்பட்டது",
       "classified": "வகைப்படுத்தப்பட்டது",
       "legacy": "பழைய",
