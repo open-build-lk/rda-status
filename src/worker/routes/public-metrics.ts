@@ -97,20 +97,20 @@ publicMetricsRoutes.get("/metrics", async (c) => {
   );
 
   // Calculate resolution times (only for reports that have both timestamps)
+  // Note: Drizzle with mode: "timestamp" returns Date objects directly
   const reportsWithResolutionTime = resolvedReports
     .filter(r => r.createdAt && r.resolvedAt)
     .map(r => ({
       ...r,
       resolutionTimeDays: daysBetween(
-        new Date(r.createdAt as unknown as number * 1000),
-        new Date(r.resolvedAt as unknown as number * 1000)
+        r.createdAt as Date,
+        r.resolvedAt as Date
       ),
     }));
 
   // Average resolution time (for reports resolved within last year)
   const recentResolved = reportsWithResolutionTime.filter(r => {
-    const resolvedDate = new Date(r.resolvedAt as unknown as number * 1000);
-    return resolvedDate >= oneYearAgo;
+    return (r.resolvedAt as Date) >= oneYearAgo;
   });
 
   const avgResolutionTimeDays = recentResolved.length > 0
@@ -119,21 +119,17 @@ publicMetricsRoutes.get("/metrics", async (c) => {
 
   // Resolved counts for time periods
   const resolvedThisWeek = resolvedReports.filter(r => {
-    const resolvedDate = new Date(r.resolvedAt as unknown as number * 1000);
-    return resolvedDate >= oneWeekAgo;
+    return (r.resolvedAt as Date) >= oneWeekAgo;
   }).length;
 
   const resolvedThisMonth = resolvedReports.filter(r => {
-    const resolvedDate = new Date(r.resolvedAt as unknown as number * 1000);
-    return resolvedDate >= oneMonthAgo;
+    return (r.resolvedAt as Date) >= oneMonthAgo;
   }).length;
 
   // Recent resolutions (last 5, within a year)
   const recentResolutions = recentResolved
     .sort((a, b) => {
-      const aDate = a.resolvedAt as unknown as number;
-      const bDate = b.resolvedAt as unknown as number;
-      return bDate - aDate;
+      return (b.resolvedAt as Date).getTime() - (a.resolvedAt as Date).getTime();
     })
     .slice(0, 5)
     .map(r => {
@@ -157,7 +153,7 @@ publicMetricsRoutes.get("/metrics", async (c) => {
         district: districtName || "Unknown",
         damageType: r.damageType,
         resolutionTimeDays: r.resolutionTimeDays,
-        resolvedAt: new Date(r.resolvedAt as unknown as number * 1000).toISOString(),
+        resolvedAt: (r.resolvedAt as Date).toISOString(),
       };
     });
 
