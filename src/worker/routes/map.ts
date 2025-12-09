@@ -244,4 +244,29 @@ mapRoutes.get("/incidents", async (c) => {
   return c.json(reportsWithLocation);
 });
 
+// GET /api/v1/map/last-updated - Get timestamp of most recently updated verified report
+mapRoutes.get("/last-updated", async (c) => {
+  const db = createDb(c.env.DB);
+
+  const result = await db
+    .select({
+      updatedAt: damageReports.updatedAt,
+    })
+    .from(damageReports)
+    .where(
+      or(
+        eq(damageReports.status, "verified"),
+        eq(damageReports.status, "in_progress")
+      )
+    )
+    .orderBy(desc(damageReports.updatedAt))
+    .limit(1);
+
+  if (result.length === 0) {
+    return c.json({ lastUpdated: null });
+  }
+
+  return c.json({ lastUpdated: result[0].updatedAt });
+});
+
 export { mapRoutes };

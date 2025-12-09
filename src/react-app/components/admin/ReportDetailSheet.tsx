@@ -34,6 +34,7 @@ import {
   XCircle,
   Save,
   History,
+  Building2,
 } from "lucide-react";
 import { formatDistanceToNow } from "@/lib/utils";
 import clsx from "clsx";
@@ -54,6 +55,14 @@ interface MediaAttachment {
   capturedLat: number | null;
   capturedLng: number | null;
   createdAt: string;
+}
+
+interface Organization {
+  id: string;
+  name: string;
+  code: string;
+  type: string;
+  province: string | null;
 }
 
 interface Report {
@@ -181,6 +190,10 @@ export function ReportDetailSheet({
   // Form state - mirror of report for editing
   const [formData, setFormData] = useState<Partial<Report>>({});
 
+  // Organizations for assignment
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [editAssignedOrgId, setEditAssignedOrgId] = useState<string>("");
+
   // Location edit state
   const [editProvince, setEditProvince] = useState<string>("");
   const [editDistrict, setEditDistrict] = useState<string>("");
@@ -224,11 +237,22 @@ export function ReportDetailSheet({
     }
   }, [open, reportId, fetchReport]);
 
+  // Fetch organizations when sheet opens
+  useEffect(() => {
+    if (open && organizations.length === 0) {
+      fetch("/api/v1/admin/organizations", { credentials: "include" })
+        .then((res) => res.json())
+        .then((data) => setOrganizations(data as Organization[]))
+        .catch((err) => console.error("Failed to load organizations:", err));
+    }
+  }, [open, organizations.length]);
+
   // Reset location form when report changes
   useEffect(() => {
     if (report) {
       setEditLocationName(report.locationName || "");
       setEditRoadNumberInput(report.roadNumberInput || "");
+      setEditAssignedOrgId(report.assignedOrgId || "");
       // Get province/district from workflowData JSON
       let province = "";
       let district = "";
@@ -303,6 +327,7 @@ export function ReportDetailSheet({
         locationName: editLocationName || null,
         roadNumberInput: editRoadNumberInput || null,
         roadClass: editSelectedRoad?.roadClass || null,
+        assignedOrgId: editAssignedOrgId || null,
       };
       const response = await fetch(`/api/v1/admin/reports/${report.id}`, {
         method: "PATCH",
@@ -593,6 +618,47 @@ export function ReportDetailSheet({
                         setHasChanges(true);
                       }}
                     />
+                  </div>
+                </div>
+
+                {/* Organization Assignment */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-2">
+                    <Building2 className="w-4 h-4" />
+                    Organization Assignment
+                  </h3>
+
+                  <div className="space-y-2">
+                    <Label>Assigned Organization</Label>
+                    <Select
+                      value={editAssignedOrgId}
+                      onValueChange={(value) => {
+                        setEditAssignedOrgId(value === "unassigned" ? "" : value);
+                        setHasChanges(true);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select organization" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="unassigned">
+                          <span className="text-gray-500">Not assigned</span>
+                        </SelectItem>
+                        {organizations.map((org) => (
+                          <SelectItem key={org.id} value={org.id}>
+                            <span className="flex items-center gap-2">
+                              <span className="font-medium">{org.code}</span>
+                              <span className="text-gray-500">{org.name}</span>
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {report.assignedOrgName && editAssignedOrgId === report.assignedOrgId && (
+                      <p className="text-xs text-gray-500">
+                        Currently: {report.assignedOrgCode} - {report.assignedOrgName}
+                      </p>
+                    )}
                   </div>
                 </div>
 

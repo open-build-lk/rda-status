@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { LatLngBounds } from "leaflet";
 import { useCitizenIncidents, ProcessedIncident } from "@/hooks/useCitizenIncidents";
@@ -21,6 +22,7 @@ const BLOCKED_COLOR = "#DC2626";
 
 export function RoadTable(props: RoadTableProps = {}) {
   const { onSegmentClick } = props;
+  const { t } = useTranslation();
   const { incidents, isLoading, error } = useCitizenIncidents();
   const {
     selectedProvince,
@@ -86,12 +88,12 @@ export function RoadTable(props: RoadTableProps = {}) {
       <div className="flex h-full flex-col overflow-hidden bg-white dark:bg-gray-900">
         <div className="border-b border-gray-200 px-4 py-3 dark:border-gray-700">
           <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
-            Affected Roads
+            {t("report:home.activeIncidents")}
           </h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Loading...</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{t("messages.loading")}</p>
         </div>
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-gray-400 animate-pulse">Loading road data...</div>
+          <div className="text-gray-400 animate-pulse">{t("messages.loading")}</div>
         </div>
       </div>
     );
@@ -102,7 +104,7 @@ export function RoadTable(props: RoadTableProps = {}) {
       <div className="flex h-full flex-col overflow-hidden bg-white dark:bg-gray-900">
         <div className="border-b border-gray-200 px-4 py-3 dark:border-gray-700">
           <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
-            Affected Roads
+            {t("report:home.activeIncidents")}
           </h2>
         </div>
         <div className="flex-1 flex items-center justify-center p-4">
@@ -117,10 +119,10 @@ export function RoadTable(props: RoadTableProps = {}) {
       {/* Header */}
       <div className="border-b border-gray-200 px-4 py-3 dark:border-gray-700">
         <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
-          Affected Roads
+          {t("report:home.activeIncidents")}
         </h2>
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          {incidents.length} citizen reports in {provinceGroups.length} provinces
+          {t("report:home.citizenReports", { count: incidents.length, provinces: provinceGroups.length })}
         </p>
       </div>
 
@@ -147,7 +149,7 @@ export function RoadTable(props: RoadTableProps = {}) {
                   <ChevronRight className="h-4 w-4 flex-shrink-0 text-gray-400" />
                 )}
                 <span className="flex-1 text-sm font-medium text-gray-900 dark:text-white">
-                  {group.province}
+                  {t(`locations:provinces.${group.province}`, { defaultValue: group.province })}
                 </span>
                 <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400">
                   {group.reports.length}

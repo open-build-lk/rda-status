@@ -1,0 +1,40 @@
+{
+  "provinces": {
+    "central": "மத்திய",
+    "eastern": "கிழக்கு",
+    "north-central": "வட மத்திய",
+    "northern": "வடக்கு",
+    "north-western": "வட மேற்கு",
+    "sabaragamuwa": "சபரகமுவா",
+    "southern": "தெற்கு",
+    "uva": "ஊவா",
+    "western": "மேல்"
+  },
+  "districts": {
+    "kandy": "கண்டி",
+    "matale": "மாத்தளை",
+    "nuwara-eliya": "நுவரெலியா",
+    "ampara": "அம்பாறை",
+    "batticaloa": "மட்டக்களப்பு",
+    "trincomalee": "திருகோணமலை",
+    "anuradhapura": "அனுராதபுரம்",
+    "polonnaruwa": "பொலன்னருவை",
+    "jaffna": "யாழ்ப்பாணம்",
+    "kilinochchi": "கிளிநொச்சி",
+    "mannar": "மன்னார்",
+    "mullaitivu": "முல்லைத்தீவு",
+    "vavuniya": "வவுனியா",
+    "kurunegala": "குருநாகல்",
+    "puttalam": "புத்தளம்",
+    "kegalle": "கேகாலை",
+    "ratnapura": "இரத்தினபுரி",
+    "galle": "காலி",
+    "hambantota": "அம்பாந்தோட்டை",
+    "matara": "மாத்தறை",
+    "badulla": "பதுளை",
+    "monaragala": "மொனராகலை",
+    "colombo": "கொழும்பு",
+    "gampaha": "கம்பஹா",
+    "kalutara": "களுத்துறை"
+  }
+}

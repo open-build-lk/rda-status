@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   AlertTriangle,
   MapPin,
@@ -13,6 +14,7 @@ import { useRoadSegments } from "@/hooks/useRoadSegments";
 import { useCitizenIncidents } from "@/hooks/useCitizenIncidents";
 
 export function Home() {
+  const { t } = useTranslation();
   const [showMobileList, setShowMobileList] = useState(false);
   const { segments } = useRoadSegments();
   const { incidents } = useCitizenIncidents();
@@ -73,7 +75,7 @@ export function Home() {
                   {stats.totalBlocked}
                 </p>
                 <p className="whitespace-nowrap text-[9px] text-gray-500 dark:text-gray-400 sm:text-xs">
-                  Roads Affected
+                  {t("report:home.roadsAffected")}
                 </p>
               </div>
             </div>
@@ -88,7 +90,7 @@ export function Home() {
                   {stats.provinces}
                 </p>
                 <p className="whitespace-nowrap text-[9px] text-gray-500 dark:text-gray-400 sm:text-xs">
-                  Provinces
+                  {t("report:home.provinces")}
                 </p>
               </div>
             </div>
@@ -103,7 +105,7 @@ export function Home() {
                   {stats.flooding}
                 </p>
                 <p className="whitespace-nowrap text-[9px] text-gray-500 dark:text-gray-400 sm:text-xs">
-                  Flooding
+                  {t("report:home.flooding")}
                 </p>
               </div>
             </div>
@@ -118,7 +120,7 @@ export function Home() {
                   {stats.landslides}
                 </p>
                 <p className="whitespace-nowrap text-[9px] text-gray-500 dark:text-gray-400 sm:text-xs">
-                  Landslides
+                  {t("report:home.landslides")}
                 </p>
               </div>
             </div>

@@ -57,3 +57,12 @@ body {
 :focus-visible {
   @apply outline-2 outline-offset-2 outline-primary-500;
 }
+
+/* Language-specific font families */
+:lang(si) {
+  font-family: "Noto Sans Sinhala", var(--font-sans);
+}
+
+:lang(ta) {
+  font-family: "Noto Sans Tamil", var(--font-sans);
+}
