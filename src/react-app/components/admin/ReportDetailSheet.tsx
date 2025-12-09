@@ -40,6 +40,7 @@ import { formatDistanceToNow } from "@/lib/utils";
 import clsx from "clsx";
 import { AuditTimeline } from "./AuditTimeline";
 import { RoadNumberInput, type SelectedRoad } from "@/components/forms/RoadNumberInput";
+import { ImageLightbox } from "@/components/ui/ImageLightbox";
 import {
   provinces,
   getDistrictsForProvince,
@@ -186,6 +187,7 @@ export function ReportDetailSheet({
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [imageIndex, setImageIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   // Form state - mirror of report for editing
   const [formData, setFormData] = useState<Partial<Report>>({});
@@ -403,7 +405,8 @@ export function ReportDetailSheet({
                   <img
                     src={`/api/v1/upload/photo/${media[imageIndex].storageKey}`}
                     alt=""
-                    className="w-full h-64 object-contain"
+                    className="w-full h-64 object-contain cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={() => setLightboxOpen(true)}
                   />
                   {hasMultipleImages && (
                     <>
@@ -445,6 +448,17 @@ export function ReportDetailSheet({
                   </div>
                 </div>
               )}
+
+              {/* Fullscreen Image Lightbox */}
+              <ImageLightbox
+                images={media.map((m) => ({
+                  url: `/api/v1/upload/photo/${m.storageKey}`,
+                  alt: m.originalFilename || undefined,
+                }))}
+                initialIndex={imageIndex}
+                open={lightboxOpen}
+                onClose={() => setLightboxOpen(false)}
+              />
 
               <div className="p-6 space-y-6">
                 {/* Status & Classification */}
