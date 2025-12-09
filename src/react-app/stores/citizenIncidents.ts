@@ -15,6 +15,9 @@ export interface CitizenIncidentData {
   districtName: string | null;
   provinceName: string | null;
   roadLocation: string | null;
+  status: string;
+  workflowData: string | null;
+  resolvedAt: string | null;
 }
 
 export interface ProcessedIncident {
@@ -29,6 +32,9 @@ export interface ProcessedIncident {
   districtName: string;
   provinceName: string;
   roadLocation: string | null;
+  status: string;
+  progressPercent: number;
+  resolvedAt: string | null;
 }
 
 interface CitizenIncidentsState {
@@ -47,20 +53,36 @@ function processIncidents(
   rawIncidents: CitizenIncidentData[]
 ): ProcessedIncident[] {
   return rawIncidents
-    .filter((inc) => inc.latitude && inc.longitude && inc.provinceName && inc.districtName)
-    .map((inc) => ({
-      id: inc.id,
-      reportNumber: inc.reportNumber,
-      position: [inc.latitude, inc.longitude] as LatLngExpression,
-      damageType: inc.damageType || "other",
-      passabilityLevel: inc.passabilityLevel || "unknown",
-      isSingleLane: inc.isSingleLane ?? false,
-      description: inc.description || "No description provided",
-      createdAt: inc.createdAt,
-      districtName: inc.districtName || "Unknown",
-      provinceName: inc.provinceName || "Unknown",
-      roadLocation: inc.roadLocation,
-    }));
+    .filter((inc) => inc.latitude && inc.longitude)
+    .map((inc) => {
+      // Parse workflowData for progress percent
+      let progressPercent = 0;
+      if (inc.workflowData) {
+        try {
+          const workflow = JSON.parse(inc.workflowData);
+          progressPercent = workflow.progressPercent || 0;
+        } catch {
+          // Ignore parse errors
+        }
+      }
+
+      return {
+        id: inc.id,
+        reportNumber: inc.reportNumber,
+        position: [inc.latitude, inc.longitude] as LatLngExpression,
+        damageType: inc.damageType || "other",
+        passabilityLevel: inc.passabilityLevel || "unknown",
+        isSingleLane: inc.isSingleLane ?? false,
+        description: inc.description || "No description provided",
+        createdAt: inc.createdAt,
+        districtName: inc.districtName || "Unknown",
+        provinceName: inc.provinceName || "Unknown",
+        roadLocation: inc.roadLocation,
+        status: inc.status,
+        progressPercent,
+        resolvedAt: inc.resolvedAt,
+      };
+    });
 }
 
 export const useCitizenIncidentsStore = create<

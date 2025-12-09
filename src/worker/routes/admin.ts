@@ -464,6 +464,14 @@ adminRoutes.patch(
         fromStatus: report.status,
         toStatus: updates.status,
       });
+
+      // Set resolution tracking timestamps based on status change
+      if (updates.status === "in_progress" && !report.inProgressAt) {
+        updateData.inProgressAt = now;
+      }
+      if (updates.status === "resolved" && !report.resolvedAt) {
+        updateData.resolvedAt = now;
+      }
     }
 
     if (updates.damageType !== undefined && updates.damageType !== report.damageType) {

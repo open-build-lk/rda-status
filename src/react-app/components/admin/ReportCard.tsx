@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { formatDistanceToNow } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -87,16 +88,17 @@ const damageTypeIcons: Record<string, string> = {
   other: "❓",
 };
 
-const damageTypeLabels: Record<string, string> = {
-  tree_fall: "Tree Fall",
-  bridge_collapse: "Bridge",
-  landslide: "Landslide",
-  flooding: "Flooding",
-  road_breakage: "Road Damage",
-  washout: "Washout",
-  collapse: "Collapse",
-  blockage: "Blockage",
-  other: "Other",
+// Map damage types to translation keys
+const damageTypeKeys: Record<string, string> = {
+  tree_fall: "tree_fall",
+  bridge_collapse: "bridge_collapse",
+  landslide: "landslide",
+  flooding: "flooding",
+  road_breakage: "road_breakage",
+  washout: "washout",
+  collapse: "collapse",
+  blockage: "blockage",
+  other: "other",
 };
 
 // Status styling
@@ -176,9 +178,11 @@ export function ReportCard({
   onClassify,
   isUpdating,
 }: ReportCardProps) {
+  const { t } = useTranslation();
   const status = statusConfig[report.status] || statusConfig.new;
   const icon = damageTypeIcons[report.damageType] || "❓";
-  const typeLabel = damageTypeLabels[report.damageType] || report.damageType;
+  const damageTypeKey = damageTypeKeys[report.damageType] || report.damageType;
+  const typeLabel = t(`damageTypes.${damageTypeKey}`);
 
   // Parse workflow data
   const workflow: WorkflowData = report.workflowData
@@ -218,7 +222,7 @@ export function ReportCard({
             <span className="font-mono text-sm font-medium">{report.reportNumber}</span>
           </div>
           <span className={`text-xs px-2 py-0.5 rounded-full ${status.bg} ${status.text} capitalize`}>
-            {report.status.replace("_", " ")}
+            {t(`status.${report.status}`)}
           </span>
         </div>
 
@@ -229,7 +233,7 @@ export function ReportCard({
           <div className="flex items-center gap-1.5">
             <SeverityIndicator severity={report.severity} />
             <span className="text-xs text-gray-500">
-              {report.severity >= 4 ? "High" : report.severity >= 3 ? "Med" : "Low"}
+              {report.severity >= 4 ? t("severity.high") : report.severity >= 3 ? t("severity.med") : t("severity.low")}
             </span>
           </div>
         </div>
@@ -262,7 +266,7 @@ export function ReportCard({
             )}
             {report.classificationStatus && (
               <span className={`px-1.5 py-0.5 rounded ${classificationStatusConfig[report.classificationStatus]?.color || "bg-gray-100"}`}>
-                {classificationStatusConfig[report.classificationStatus]?.label || report.classificationStatus}
+                {t(`classification.${report.classificationStatus}`)}
               </span>
             )}
           </div>
@@ -292,7 +296,7 @@ export function ReportCard({
 
             {/* Cost estimate */}
             <div className="flex items-center justify-between text-xs">
-              <span className="text-gray-500">Est. Cost:</span>
+              <span className="text-gray-500">{t("admin.estCost")}:</span>
               <span className="font-medium text-gray-700 dark:text-gray-300">
                 {formatLkr(estimatedCostLkr)}
               </span>
@@ -322,7 +326,7 @@ export function ReportCard({
               disabled={isUpdating}
             >
               <Route className="w-4 h-4 mr-1" />
-              Classify
+              {t("admin.classify")}
             </Button>
           )}
 
@@ -339,7 +343,7 @@ export function ReportCard({
               disabled={isUpdating}
             >
               <Check className="w-4 h-4 mr-1" />
-              Verify
+              {t("admin.verify")}
             </Button>
           )}
 
@@ -355,7 +359,7 @@ export function ReportCard({
               disabled={isUpdating}
             >
               <X className="w-4 h-4 mr-1" />
-              Reject
+              {t("admin.reject")}
             </Button>
           )}
 
@@ -372,7 +376,7 @@ export function ReportCard({
               disabled={isUpdating}
             >
               <ArrowRight className="w-4 h-4 mr-1" />
-              Start Progress
+              {t("admin.startProgress")}
             </Button>
           )}
 
@@ -389,7 +393,7 @@ export function ReportCard({
               disabled={isUpdating}
             >
               <Pencil className="w-4 h-4 mr-1" />
-              Progress
+              {t("admin.updateProgress")}
             </Button>
           )}
 
@@ -405,7 +409,7 @@ export function ReportCard({
               disabled={isUpdating}
             >
               <CheckCircle className="w-4 h-4 mr-1" />
-              Done
+              {t("admin.markDone")}
             </Button>
           )}
 
@@ -421,7 +425,7 @@ export function ReportCard({
               disabled={isUpdating}
             >
               <RotateCcw className="w-4 h-4 mr-1" />
-              Back
+              {t("admin.reopen")}
             </Button>
           )}
 
@@ -438,7 +442,7 @@ export function ReportCard({
               disabled={isUpdating}
             >
               <RotateCcw className="w-4 h-4 mr-1" />
-              Reopen
+              {t("admin.reopen")}
             </Button>
           )}
 
@@ -455,7 +459,7 @@ export function ReportCard({
               disabled={isUpdating}
             >
               <RotateCcw className="w-4 h-4 mr-1" />
-              Reopen
+              {t("admin.reopen")}
             </Button>
           )}
 

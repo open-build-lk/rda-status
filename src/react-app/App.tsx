@@ -1,6 +1,8 @@
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Layout } from "@/components/layout";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { useThemeStore } from "@/stores/theme";
 import {
   Home,
   Projects,
@@ -19,6 +21,12 @@ import {
 } from "@/pages";
 
 function AppContent() {
+  // Initialize theme on mount
+  const theme = useThemeStore((state) => state.theme);
+  useEffect(() => {
+    // Theme is applied via zustand persist onRehydrateStorage
+  }, [theme]);
+
   return (
     <Layout>
       <Routes>

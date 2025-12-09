@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { LatLngExpression, LatLngBounds } from "leaflet";
 
+export type StatusFilter = "all" | "pending" | "in_progress" | "resolved";
+
 interface MapViewState {
   selectedProvince: string | null;
   selectedSegmentId: string | null;
@@ -8,12 +10,14 @@ interface MapViewState {
   targetBounds: LatLngBounds | null;
   targetLocation: LatLngExpression | null;
   targetZoom: number | null;
+  statusFilter: StatusFilter;
 }
 
 interface MapViewActions {
   selectProvince: (province: string, bounds: LatLngBounds) => void;
   selectSegment: (segmentId: string, location: LatLngExpression) => void;
   toggleProvinceExpanded: (province: string) => void;
+  setStatusFilter: (filter: StatusFilter) => void;
   clearSelection: () => void;
   clearMapTarget: () => void;
 }
@@ -26,6 +30,7 @@ export const useMapViewStore = create<MapViewState & MapViewActions>()(
     targetBounds: null,
     targetLocation: null,
     targetZoom: null,
+    statusFilter: "all" as StatusFilter,
 
     selectProvince: (province: string, bounds: LatLngBounds) => {
       const { expandedProvinces } = get();
@@ -68,6 +73,12 @@ export const useMapViewStore = create<MapViewState & MapViewActions>()(
       }
 
       set({ expandedProvinces: newExpanded });
+    },
+
+    setStatusFilter: (filter: StatusFilter) => {
+      const { statusFilter } = get();
+      // Toggle off if clicking same filter, otherwise set new filter
+      set({ statusFilter: statusFilter === filter ? "all" : filter });
     },
 
     clearSelection: () => {

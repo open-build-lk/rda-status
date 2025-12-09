@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 interface StatusCounts {
   new: number;
   verified: number;
@@ -13,14 +15,15 @@ interface StatusSummaryProps {
 }
 
 const statusConfig = [
-  { key: "new", label: "New", dotClass: "bg-red-500", activeClass: "ring-red-500" },
-  { key: "verified", label: "Verified", dotClass: "bg-green-500", activeClass: "ring-green-500" },
-  { key: "in_progress", label: "In Progress", dotClass: "bg-yellow-500", activeClass: "ring-yellow-500" },
-  { key: "resolved", label: "Resolved", dotClass: "bg-gray-500", activeClass: "ring-gray-500" },
-  { key: "rejected", label: "Rejected", dotClass: "bg-red-400", activeClass: "ring-red-400" },
+  { key: "new", dotClass: "bg-red-500", activeClass: "ring-red-500" },
+  { key: "verified", dotClass: "bg-green-500", activeClass: "ring-green-500" },
+  { key: "in_progress", dotClass: "bg-yellow-500", activeClass: "ring-yellow-500" },
+  { key: "resolved", dotClass: "bg-gray-500", activeClass: "ring-gray-500" },
+  { key: "rejected", dotClass: "bg-red-400", activeClass: "ring-red-400" },
 ];
 
 export function StatusSummary({ counts, selectedStatus, onStatusClick }: StatusSummaryProps) {
+  const { t } = useTranslation();
   const total = Object.values(counts).reduce((sum, c) => sum + c, 0);
 
   return (
@@ -34,14 +37,14 @@ export function StatusSummary({ counts, selectedStatus, onStatusClick }: StatusS
             : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
         }`}
       >
-        All
+        {t("dashboard.all")}
         <span className="bg-white/20 dark:bg-black/20 px-1.5 py-0.5 rounded-full">
           {total}
         </span>
       </button>
 
       {/* Status buttons */}
-      {statusConfig.map(({ key, label, dotClass, activeClass }) => {
+      {statusConfig.map(({ key, dotClass, activeClass }) => {
         const count = counts[key as keyof StatusCounts];
         if (count === 0 && selectedStatus !== key) return null; // Hide empty statuses unless selected
 
@@ -56,7 +59,7 @@ export function StatusSummary({ counts, selectedStatus, onStatusClick }: StatusS
             }`}
           >
             <span className={`w-2 h-2 rounded-full ${dotClass}`} />
-            <span className="hidden sm:inline">{label}</span>
+            <span className="hidden sm:inline">{t(`status.${key}`)}</span>
             <span className="sm:hidden">{count}</span>
             <span className="hidden sm:inline bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded-full">
               {count}

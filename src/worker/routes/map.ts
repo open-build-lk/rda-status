@@ -3,7 +3,7 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { createDb } from "../db";
 import { damageReports, roadSegments } from "../db/schema";
-import { eq, and, desc, or } from "drizzle-orm";
+import { eq, and, desc, or, sql } from "drizzle-orm";
 import { snapToRoads, calculateMidpoint } from "../services/roadsService";
 
 const mapRoutes = new Hono<{ Bindings: Env }>();
@@ -183,8 +183,14 @@ mapRoutes.get("/segments/verified", async (c) => {
 });
 
 // GET /api/v1/map/incidents - Get approved citizen incident reports for map display
+// Includes resolved items within the last 365 days
 mapRoutes.get("/incidents", async (c) => {
   const db = createDb(c.env.DB);
+
+  // Calculate 365 days ago for resolved items filter
+  const oneYearAgo = new Date();
+  oneYearAgo.setDate(oneYearAgo.getDate() - 365);
+  const oneYearAgoTimestamp = Math.floor(oneYearAgo.getTime() / 1000);
 
   const reports = await db
     .select({
@@ -200,13 +206,21 @@ mapRoutes.get("/incidents", async (c) => {
       description: damageReports.description,
       createdAt: damageReports.createdAt,
       reportNumber: damageReports.reportNumber,
+      status: damageReports.status,
+      workflowData: damageReports.workflowData,
+      resolvedAt: damageReports.resolvedAt,
     })
     .from(damageReports)
     .where(
       and(
         or(
           eq(damageReports.status, "verified"),
-          eq(damageReports.status, "in_progress")
+          eq(damageReports.status, "in_progress"),
+          // Include resolved items within last 365 days
+          and(
+            eq(damageReports.status, "resolved"),
+            sql`${damageReports.resolvedAt} >= ${oneYearAgoTimestamp}`
+          )
         ),
         eq(damageReports.sourceType, "citizen")
       )

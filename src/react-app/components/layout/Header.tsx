@@ -25,6 +25,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface NavItem {
   label: string;
@@ -119,6 +120,9 @@ export function Header() {
 
         {/* Right: Actions and Auth section */}
         <div className="flex items-center gap-1 sm:gap-2">
+          {/* Theme toggle */}
+          <ThemeToggle />
+
           {/* Language Switcher - always visible */}
           <LanguageSwitcher />
 

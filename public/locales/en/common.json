@@ -14,7 +14,15 @@
     "reports": "Reports",
     "users": "Users",
     "bulkUpload": "Bulk Upload",
-    "adminReports": "Admin Reports"
+    "adminReports": "Admin Reports",
+    "platform": "Platform",
+    "administration": "Administration",
+    "quickActions": "Quick Actions",
+    "reportIncident": "Report Incident",
+    "citizenReports": "Citizen Reports",
+    "unverifiedReports": "Unverified Reports",
+    "userManagement": "User Management",
+    "role": "Role"
   },
   "buttons": {
     "save": "Save",
@@ -46,7 +54,10 @@
     "1": "Low",
     "2": "Medium",
     "3": "High",
-    "4": "Critical"
+    "4": "Critical",
+    "low": "Low",
+    "med": "Med",
+    "high": "High"
   },
   "damageTypes": {
     "tree_fall": "Tree Fall",
@@ -102,5 +113,53 @@
   "footer": {
     "dataSource": "Data Source: Road Development Authority (RDA).",
     "lastUpdated": "Last Updated: {{date}}"
+  },
+  "dashboard": {
+    "totalReports": "Total Reports",
+    "resolved": "Resolved",
+    "inProgress": "In Progress",
+    "pending": "Pending",
+    "avgResolution": "Avg Resolution",
+    "days": "days",
+    "day": "day",
+    "recentlyFixed": "Recently Fixed",
+    "activeWork": "Active Repairs",
+    "byDistrict": "By District",
+    "complete": "complete",
+    "fixedIn": "Fixed in {{days}} days",
+    "all": "All",
+    "filterByStatus": "Filter by status"
+  },
+  "admin": {
+    "citizenReports": "Citizen Reports",
+    "province": "Province",
+    "district": "District",
+    "allProvinces": "All Provinces",
+    "allDistricts": "All Districts",
+    "organization": "Organization",
+    "allOrganizations": "All Organizations",
+    "search": "Search...",
+    "showingReports": "Showing {{filtered}} of {{total}} reports",
+    "noReportsFound": "No reports found matching your filters",
+    "classify": "Classify",
+    "verify": "Verify",
+    "reject": "Reject",
+    "startProgress": "Start Progress",
+    "markDone": "Done",
+    "updateProgress": "Progress",
+    "reopen": "Back",
+    "viewDetails": "View Details",
+    "estCost": "Est. Cost",
+    "hoursAgo": "{{count}} hours ago",
+    "daysAgo": "{{count}} days ago",
+    "page": "Page",
+    "of": "of"
+  },
+  "classification": {
+    "pending": "Needs Classification",
+    "auto_classified": "Auto-Classified",
+    "manual_classified": "Classified",
+    "legacy": "Legacy",
+    "unclassifiable": "N/A"
   }
 }
