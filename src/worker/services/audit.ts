@@ -23,7 +23,8 @@ export interface AuditEntry {
  * Use this for tracking changes to any entity (users, invitations, org assignments, reports).
  */
 export async function recordAuditEntries(
-  db: DrizzleD1Database,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  db: DrizzleD1Database<any>,
   entries: AuditEntry[]
 ): Promise<void> {
   if (entries.length === 0) return;
@@ -58,7 +59,7 @@ export function createFieldChangeEntries<T extends Record<string, unknown>>(
   targetType: AuditTargetType,
   targetId: string,
   oldValues: T,
-  newValues: Partial<T>,
+  newValues: Partial<{ [K in keyof T]: T[K] | null | undefined }>,
   performedBy: string | null,
   performerRole: string | null,
   metadata?: Record<string, unknown>

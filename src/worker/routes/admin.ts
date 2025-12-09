@@ -6,7 +6,7 @@ import { damageReports, roadSegments, mediaAttachments, user, userInvitations, l
 import { eq, desc, or, isNull, and } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { sendEmail, getInvitationEmailHtml } from "../services/email";
-import { recordAuditEntries, createFieldChangeEntries, type AuditEntry } from "../services/audit";
+import { recordAuditEntries, createFieldChangeEntries } from "../services/audit";
 import { getAuth } from "../middleware/auth";
 import {
   initialRoadSegments,
@@ -1533,12 +1533,6 @@ adminRoutes.get(
     if (performerId) {
       conditions.push(eq(stateTransitions.userId, performerId));
     }
-
-    // Get total count
-    const [countResult] = await db
-      .select({ count: stateTransitions.id })
-      .from(stateTransitions)
-      .where(conditions.length > 0 ? and(...conditions) : undefined);
 
     // This is a workaround since D1 doesn't have COUNT()
     const allIds = await db

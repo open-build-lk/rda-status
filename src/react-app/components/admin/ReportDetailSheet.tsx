@@ -34,8 +34,6 @@ import {
   XCircle,
   Save,
   History,
-  Route,
-  Building2,
 } from "lucide-react";
 import { formatDistanceToNow } from "@/lib/utils";
 import clsx from "clsx";
@@ -56,22 +54,6 @@ interface MediaAttachment {
   capturedLat: number | null;
   capturedLng: number | null;
   createdAt: string;
-}
-
-interface Organization {
-  id: string;
-  name: string;
-  code: string;
-  type: string;
-  province: string | null;
-  roadClasses: string | null;
-}
-
-interface RoadSuggestion {
-  id: string;
-  roadNumber: string;
-  roadClass: string;
-  name: string | null;
 }
 
 interface Report {
@@ -183,22 +165,6 @@ const severityLabels: Record<number, string> = {
   4: "High",
   5: "Critical",
 };
-
-const ROAD_CLASS_COLORS: Record<string, string> = {
-  A: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
-  B: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",
-  C: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300",
-  D: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
-  E: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-};
-
-const ROAD_CLASSES = [
-  { value: "A", label: "A - National Trunk", org: "RDA" },
-  { value: "B", label: "B - National Secondary", org: "RDA" },
-  { value: "E", label: "E - Expressway", org: "RDA" },
-  { value: "C", label: "C - Provincial Main", org: "Provincial" },
-  { value: "D", label: "D - Provincial Secondary", org: "Provincial" },
-];
 
 export function ReportDetailSheet({
   open,
