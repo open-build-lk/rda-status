@@ -36,6 +36,13 @@ export interface IncidentDetails {
   [key: string]: unknown; // Allow any additional fields
 }
 
+export interface SelectedRoad {
+  id: string;
+  roadNumber: string;
+  roadClass: string;
+  name: string | null;
+}
+
 export interface BulkIncident {
   groupId: string;
   photos: PhotoWithMetadata[];
@@ -43,6 +50,8 @@ export interface BulkIncident {
   incidentDate: Date | null; // Earliest photo timestamp
   province: string | null;
   district: string | null;
+  roadNumberInput: string; // What user typed in the input
+  selectedRoad: SelectedRoad | null; // Full road object if matched from database
   locationName: string;
   damageType: DamageType | null;
   passabilityLevel: PassabilityLevel | null;
@@ -154,6 +163,8 @@ export const useBulkUploadStore = create<BulkUploadState & BulkUploadActions>()(
               incidentDate: earliestDate,
               province: null,
               district: null,
+              roadNumberInput: "",
+              selectedRoad: null,
               locationName: "",
               damageType: null,
               passabilityLevel: null,

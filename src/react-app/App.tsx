@@ -12,6 +12,7 @@ import {
   ReportVerified,
   AdminReports,
   AdminUsers,
+  AdminAuditTrail,
   AcceptInvitation,
   BulkUpload,
   UnverifiedReports,
@@ -77,6 +78,14 @@ function AppContent() {
           element={
             <ProtectedRoute allowedRoles={["super_admin"]}>
               <AdminUsers />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/audit-trail"
+          element={
+            <ProtectedRoute allowedRoles={["super_admin"]}>
+              <AdminAuditTrail />
             </ProtectedRoute>
           }
         />

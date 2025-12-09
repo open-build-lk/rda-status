@@ -4,6 +4,7 @@ import { z } from "zod";
 import { createDb } from "../db";
 import { user, userInvitations, session } from "../db/schema";
 import { eq } from "drizzle-orm";
+import { recordAuditEntries } from "../services/audit";
 
 const invitationsRoutes = new Hono<{ Bindings: Env }>();
 
@@ -138,6 +139,18 @@ invitationsRoutes.post(
         acceptedAt: now,
       })
       .where(eq(userInvitations.token, token));
+
+    // Record audit entry for invitation accepted
+    await recordAuditEntries(db, [{
+      targetType: "invitation",
+      targetId: invitation.id,
+      fieldName: "status",
+      oldValue: "pending",
+      newValue: "accepted",
+      performedBy: userId, // The newly created user
+      performerRole: invitation.role,
+      metadata: { email: invitation.email, acceptedAt: now.toISOString() },
+    }]);
 
     // Return session token for client to store
     return c.json({

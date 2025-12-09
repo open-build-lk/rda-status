@@ -30,15 +30,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+import { ReportDetailSheet } from "@/components/admin/ReportDetailSheet";
 import {
   CheckCircle,
   Clock,
@@ -53,34 +45,19 @@ import {
   ChevronsUpDown,
   ChevronLeft,
   ChevronRight,
-  User,
-  Mail,
-  Phone,
-  Calendar,
-  Image as ImageIcon,
   LayoutGrid,
   LayoutList,
   Check,
   X,
+  Building2,
 } from "lucide-react";
 import { ReportCard } from "@/components/admin/ReportCard";
 import { RejectReasonSheet } from "@/components/admin/RejectReasonSheet";
 import { UpdateProgressSheet } from "@/components/admin/UpdateProgressSheet";
+import { ClassifyReportSheet } from "@/components/admin/ClassifyReportSheet";
 import { StatusSummary } from "@/components/admin/StatusSummary";
 import { provinces } from "@/data/sriLankaLocations";
 import { useAuthStore } from "@/stores/auth";
-
-interface MediaAttachment {
-  id: string;
-  reportId: string;
-  mediaType: string;
-  storageKey: string;
-  originalFilename: string | null;
-  fileSize: number | null;
-  capturedLat: number | null;
-  capturedLng: number | null;
-  createdAt: string;
-}
 
 interface Report {
   id: string;
@@ -93,9 +70,15 @@ interface Report {
   locationName: string | null;
   description: string;
   passabilityLevel: string | null;
-  anonymousName: string | null;
-  anonymousEmail: string | null;
-  anonymousContact: string | null;
+  // Legacy anonymous fields (deprecated)
+  anonymousName?: string | null;
+  anonymousEmail?: string | null;
+  anonymousContact?: string | null;
+  // New submitter fields from user table
+  submitterId?: string | null;
+  submitterName?: string | null;
+  submitterEmail?: string | null;
+  submitterPhone?: string | null;
   isVerifiedSubmitter: boolean | number;
   sourceType: string;
   workflowData: string | null; // JSON string
@@ -107,10 +90,21 @@ interface Report {
   districtName: string | null;
   roadLocation: string | null;
   mediaCount?: number;
+  // Classification fields
+  roadNumberInput: string | null;
+  roadClass: string | null;
+  classificationStatus: string | null;
+  assignedOrgId: string | null;
+  assignedOrgName?: string | null;
+  assignedOrgCode?: string | null;
 }
 
-interface ReportWithMedia extends Report {
-  media: MediaAttachment[];
+interface Organization {
+  id: string;
+  name: string;
+  code: string;
+  type: string;
+  province: string | null;
 }
 
 const statusColors: Record<string, string> = {
@@ -187,10 +181,16 @@ export function AdminReports() {
   // Progress update sheet
   const [progressReport, setProgressReport] = useState<Report | null>(null);
 
-  // Drawer state for viewing report details
-  const [selectedReport, setSelectedReport] = useState<ReportWithMedia | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [loadingDetails, setLoadingDetails] = useState(false);
+  // Organization filter
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [selectedOrgId, setSelectedOrgId] = useState<string>("");
+
+  // Sheet state for viewing report details
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+
+  // Classify sheet state
+  const [classifyingReport, setClassifyingReport] = useState<Report | null>(null);
 
   // Save view preference
   useEffect(() => {
@@ -216,8 +216,23 @@ export function AdminReports() {
     }
   };
 
+  const fetchOrganizations = async () => {
+    try {
+      const response = await fetch("/api/v1/admin/organizations", {
+        credentials: "include",
+      });
+      if (response.ok) {
+        const data = (await response.json()) as Organization[];
+        setOrganizations(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch organizations:", err);
+    }
+  };
+
   useEffect(() => {
     fetchReports();
+    fetchOrganizations();
   }, []);
 
   // Calculate status counts
@@ -230,6 +245,9 @@ export function AdminReports() {
       if (selectedDistrict && r.districtName?.toLowerCase() !== selectedDistrict.toLowerCase()) {
         return false;
       }
+      if (selectedOrgId && r.assignedOrgId !== selectedOrgId) {
+        return false;
+      }
       return true;
     });
     filteredByLocation.forEach((r) => {
@@ -238,7 +256,7 @@ export function AdminReports() {
       }
     });
     return counts;
-  }, [reports, selectedProvince, selectedDistrict]);
+  }, [reports, selectedProvince, selectedDistrict, selectedOrgId]);
 
   // Filter reports for card view
   const filteredReports = useMemo(() => {
@@ -255,6 +273,10 @@ export function AdminReports() {
       if (selectedStatus && r.status !== selectedStatus) {
         return false;
       }
+      // Organization filter
+      if (selectedOrgId && r.assignedOrgId !== selectedOrgId) {
+        return false;
+      }
       // Global search
       if (globalFilter) {
         const search = globalFilter.toLowerCase();
@@ -268,7 +290,7 @@ export function AdminReports() {
       }
       return true;
     });
-  }, [reports, selectedProvince, selectedDistrict, selectedStatus, globalFilter]);
+  }, [reports, selectedProvince, selectedDistrict, selectedStatus, selectedOrgId, globalFilter]);
 
   // Get districts for selected province
   const availableDistricts = useMemo(() => {
@@ -279,23 +301,15 @@ export function AdminReports() {
     return province?.districts || [];
   }, [selectedProvince]);
 
-  const fetchReportDetails = async (id: string) => {
-    setLoadingDetails(true);
-    try {
-      const response = await fetch(`/api/v1/admin/reports/${id}`, {
-        credentials: "include",
-      });
-      if (!response.ok) {
-        throw new Error("Failed to fetch report details");
-      }
-      const data = (await response.json()) as ReportWithMedia;
-      setSelectedReport(data);
-      setDrawerOpen(true);
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to load report details");
-    } finally {
-      setLoadingDetails(false);
-    }
+  const openReportSheet = (id: string) => {
+    setSelectedReportId(id);
+    setSheetOpen(true);
+  };
+
+  const handleReportUpdate = (updated: Report) => {
+    setReports((prev) =>
+      prev.map((r) => (r.id === updated.id ? { ...r, ...updated } : r))
+    );
   };
 
   const updateReport = async (id: string, updates: Partial<Report>) => {
@@ -390,6 +404,75 @@ export function AdminReports() {
       setProgressReport(null);
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to update progress");
+      throw err;
+    } finally {
+      setUpdatingReportId(null);
+    }
+  };
+
+  // Classification handlers
+  const handleClassify = (id: string) => {
+    const report = reports.find((r) => r.id === id);
+    if (report) {
+      setClassifyingReport(report);
+    }
+  };
+
+  const handleConfirmClassify = async (data: {
+    roadId?: string;
+    roadClass?: string;
+    assignedOrgId: string;
+    reason?: string;
+  }) => {
+    if (!classifyingReport) return;
+    setUpdatingReportId(classifyingReport.id);
+    try {
+      const response = await fetch(`/api/v1/admin/reports/${classifyingReport.id}/classify`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) {
+        const errData = await response.json() as { error?: string };
+        throw new Error(errData.error || "Failed to classify report");
+      }
+      const result = await response.json() as { report: Report };
+      // Update local state
+      setReports((prev) =>
+        prev.map((r) => (r.id === classifyingReport.id ? { ...r, ...result.report } : r))
+      );
+      setClassifyingReport(null);
+    } catch (err) {
+      throw err; // Re-throw so the sheet knows it failed
+    } finally {
+      setUpdatingReportId(null);
+    }
+  };
+
+  const handleMarkUnclassifiable = async () => {
+    if (!classifyingReport) return;
+    setUpdatingReportId(classifyingReport.id);
+    try {
+      const response = await fetch(`/api/v1/admin/reports/${classifyingReport.id}/unclassifiable`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const errData = await response.json() as { error?: string };
+        throw new Error(errData.error || "Failed to mark as unclassifiable");
+      }
+      // Update local state
+      setReports((prev) =>
+        prev.map((r) =>
+          r.id === classifyingReport.id
+            ? { ...r, classificationStatus: "unclassifiable" }
+            : r
+        )
+      );
+      setClassifyingReport(null);
+    } catch (err) {
       throw err;
     } finally {
       setUpdatingReportId(null);
@@ -701,6 +784,27 @@ export function AdminReports() {
               </Select>
             )}
 
+            {/* Organization filter */}
+            {organizations.length > 0 && (
+              <Select
+                value={selectedOrgId}
+                onValueChange={(value) => setSelectedOrgId(value === "all" ? "" : value)}
+              >
+                <SelectTrigger className="w-[140px]">
+                  <Building2 className="w-4 h-4 mr-1 opacity-50" />
+                  <SelectValue placeholder="Organization" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Organizations</SelectItem>
+                  {organizations.map((org) => (
+                    <SelectItem key={org.id} value={org.id}>
+                      {org.code}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
             {/* Search */}
             <Input
               placeholder="Search..."
@@ -738,7 +842,8 @@ export function AdminReports() {
               onResolve={handleResolve}
               onReopen={handleReopen}
               onUpdateProgress={handleUpdateProgress}
-              onViewDetails={fetchReportDetails}
+              onViewDetails={openReportSheet}
+              onClassify={handleClassify}
               isUpdating={updatingReportId === report.id}
             />
           ))}
@@ -799,7 +904,7 @@ export function AdminReports() {
                     <tr
                       key={row.id}
                       className="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
-                      onClick={() => fetchReportDetails(row.original.id)}
+                      onClick={() => openReportSheet(row.original.id)}
                     >
                       {row.getVisibleCells().map((cell) => (
                         <td
@@ -1155,225 +1260,27 @@ export function AdminReports() {
         </DialogContent>
       </Dialog>
 
-      {/* Report Details Drawer */}
-      <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <DrawerContent className="max-h-[90vh]">
-          <DrawerHeader className="border-b">
-            <div className="flex items-center justify-between">
-              <div>
-                <DrawerTitle className="text-xl">
-                  Report: {selectedReport?.reportNumber}
-                </DrawerTitle>
-                <DrawerDescription>
-                  Submitted {selectedReport?.createdAt && formatDistanceToNow(new Date(selectedReport.createdAt))} ago
-                </DrawerDescription>
-              </div>
-              <div className="flex items-center gap-2">
-                {selectedReport && (
-                  <span
-                    className={`inline-flex items-center gap-1 px-2 py-1 rounded text-sm ${
-                      statusColors[selectedReport.status] || statusColors.new
-                    }`}
-                  >
-                    {statusIcons[selectedReport.status]}
-                    {selectedReport.status.replace("_", " ")}
-                  </span>
-                )}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    if (selectedReport) {
-                      setEditingReport({ ...selectedReport });
-                      setDrawerOpen(false);
-                    }
-                  }}
-                >
-                  <Pencil className="w-4 h-4 mr-1" />
-                  Edit
-                </Button>
-              </div>
-            </div>
-          </DrawerHeader>
+      {/* Report Details Sheet */}
+      <ReportDetailSheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        reportId={selectedReportId}
+        onUpdate={handleReportUpdate}
+      />
 
-          {loadingDetails ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
-            </div>
-          ) : selectedReport ? (
-            <div className="overflow-y-auto p-4 space-y-6">
-              {/* Images Section */}
-              {selectedReport.media && selectedReport.media.length > 0 && (
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 mb-3 flex items-center gap-2">
-                    <ImageIcon className="w-4 h-4" />
-                    Photos ({selectedReport.media.length})
-                  </h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                    {selectedReport.media.map((m) => (
-                      <a
-                        key={m.id}
-                        href={`/api/v1/upload/photo/${m.storageKey}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 hover:opacity-90 transition-opacity"
-                      >
-                        <img
-                          src={`/api/v1/upload/photo/${m.storageKey}`}
-                          alt={m.originalFilename || "Report image"}
-                          className="w-full h-full object-cover"
-                        />
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Report Details Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Left Column - Incident Details */}
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium text-gray-500 border-b pb-2">Incident Details</h3>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-xs text-gray-500">Damage Type</Label>
-                      <p className="font-medium">
-                        {damageTypeLabels[selectedReport.damageType] || selectedReport.damageType}
-                      </p>
-                    </div>
-                    <div>
-                      <Label className="text-xs text-gray-500">Severity</Label>
-                      <p className="font-medium">
-                        <span className={
-                          selectedReport.severity >= 4 ? "text-red-600" :
-                          selectedReport.severity >= 3 ? "text-orange-600" :
-                          selectedReport.severity >= 2 ? "text-yellow-600" :
-                          "text-green-600"
-                        }>
-                          {selectedReport.severity}/5
-                        </span>
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-xs text-gray-500">Passability</Label>
-                      <p className="font-medium">
-                        {selectedReport.passabilityLevel || "-"}
-                      </p>
-                    </div>
-                    <div>
-                      <Label className="text-xs text-gray-500">Source</Label>
-                      <p className="font-medium capitalize">
-                        {selectedReport.sourceType.replace("_", " ")}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label className="text-xs text-gray-500">Description</Label>
-                    <p className="text-sm mt-1 bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-                      {selectedReport.description || "No description provided"}
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label className="text-xs text-gray-500">Location</Label>
-                    {selectedReport.locationName && (
-                      <p className="font-medium mt-1">{selectedReport.locationName}</p>
-                    )}
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-sm font-mono text-gray-500">
-                        {selectedReport.latitude.toFixed(6)}, {selectedReport.longitude.toFixed(6)}
-                      </span>
-                      <a
-                        href={`https://www.google.com/maps?q=${selectedReport.latitude},${selectedReport.longitude}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary-600 hover:underline inline-flex items-center gap-1 text-sm"
-                      >
-                        <MapPin className="w-3 h-3" />
-                        View on Map
-                      </a>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right Column - Reporter Info & Timestamps */}
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium text-gray-500 border-b pb-2">Reporter Information</h3>
-
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
-                        <User className="w-4 h-4 text-gray-500" />
-                      </div>
-                      <div>
-                        <Label className="text-xs text-gray-500">Name</Label>
-                        <p className="font-medium">{selectedReport.anonymousName || "Anonymous"}</p>
-                      </div>
-                    </div>
-
-                    {selectedReport.anonymousEmail && (
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
-                          <Mail className="w-4 h-4 text-gray-500" />
-                        </div>
-                        <div>
-                          <Label className="text-xs text-gray-500">Email</Label>
-                          <p className="font-medium">{selectedReport.anonymousEmail}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {selectedReport.anonymousContact && (
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
-                          <Phone className="w-4 h-4 text-gray-500" />
-                        </div>
-                        <div>
-                          <Label className="text-xs text-gray-500">Contact</Label>
-                          <p className="font-medium">{selectedReport.anonymousContact}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className={`px-2 py-0.5 rounded text-xs ${
-                        selectedReport.isVerifiedSubmitter
-                          ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                          : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
-                      }`}>
-                        {selectedReport.isVerifiedSubmitter ? "Verified Submitter" : "Unverified"}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="pt-4 border-t space-y-2">
-                    <h3 className="text-sm font-medium text-gray-500">Timestamps</h3>
-                    <div className="flex items-center gap-2 text-sm text-gray-500">
-                      <Calendar className="w-4 h-4" />
-                      <span>Created: {new Date(selectedReport.createdAt).toLocaleString()}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-500">
-                      <Calendar className="w-4 h-4" />
-                      <span>Updated: {new Date(selectedReport.updatedAt).toLocaleString()}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : null}
-
-          <DrawerFooter className="border-t">
-            <DrawerClose asChild>
-              <Button variant="outline">Close</Button>
-            </DrawerClose>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
+      {/* Classify Report Sheet */}
+      {classifyingReport && (
+        <ClassifyReportSheet
+          open={!!classifyingReport}
+          onOpenChange={(open) => !open && setClassifyingReport(null)}
+          reportId={classifyingReport.id}
+          reportNumber={classifyingReport.reportNumber}
+          roadNumberInput={classifyingReport.roadNumberInput}
+          locationName={classifyingReport.locationName}
+          onConfirm={handleConfirmClassify}
+          onMarkUnclassifiable={handleMarkUnclassifiable}
+        />
+      )}
     </div>
   );
 }

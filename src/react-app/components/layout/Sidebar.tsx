@@ -7,6 +7,7 @@ import {
   Users,
   X,
   ClipboardList,
+  History,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -69,6 +70,12 @@ const adminItems: NavItem[] = [
     icon: <Users className="h-5 w-5" />,
     href: "/admin/users",
     roles: ["admin", "super_admin"],
+  },
+  {
+    label: "Audit Trail",
+    icon: <History className="h-5 w-5" />,
+    href: "/admin/audit-trail",
+    roles: ["super_admin"],
   },
   {
     label: "Settings",

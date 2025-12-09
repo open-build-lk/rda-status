@@ -13,6 +13,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { IncidentCategorySelect } from "@/components/forms/IncidentCategorySelect";
 import { PassabilityScale } from "@/components/forms/PassabilityScale";
+import { RoadNumberInput } from "@/components/forms/RoadNumberInput";
 import {
   provinces,
   getDistrictsForProvince,
@@ -45,7 +46,82 @@ export function GroupReviewCard({
   const onUpdateRef = useRef(onUpdate);
   onUpdateRef.current = onUpdate;
 
-  // Auto-detect province and fetch location name on mount
+  // Import the SelectedRoad type from bulkUpload store
+  type SelectedRoadType = NonNullable<BulkIncident["selectedRoad"]>;
+
+  // Try to detect road number from road name string and fetch full road info
+  const detectRoadAndFetchInfo = async (roadName: string): Promise<{ roadNumberInput: string; selectedRoad: SelectedRoadType | null } | null> => {
+    // First, try to extract road number directly from the name
+    // Patterns: "A1", "B234", "A 1", "Colombo - Kandy Road (A1)"
+    const patterns = [
+      /\b([ABCDE]\d+)\b/i,                    // A1, B234
+      /\b([ABCDE])\s*-?\s*(\d+)\b/i,          // A-1, A 1
+      /\(([ABCDE]\d+)\)/i,                     // (A1)
+    ];
+
+    let detectedRoadNumber: string | null = null;
+
+    for (const pattern of patterns) {
+      const match = roadName.match(pattern);
+      if (match) {
+        detectedRoadNumber = match[1].toUpperCase() + (match[2] || "");
+        break;
+      }
+    }
+
+    // If no direct match from name, try searching our roads database by keywords
+    if (!detectedRoadNumber) {
+      const keywords = roadName
+        .replace(/road|street|mawatha|lane|avenue/gi, "")
+        .trim()
+        .split(/[\s,\-]+/)
+        .filter((k) => k.length > 2);
+
+      if (keywords.length > 0) {
+        try {
+          const searchTerm = keywords.slice(0, 2).join(" ");
+          const response = await fetch(`/api/v1/roads/suggest?q=${encodeURIComponent(searchTerm)}&limit=1`);
+          if (response.ok) {
+            const results = await response.json() as Array<{ id: string; roadNumber: string; roadClass: string; name: string | null }>;
+            if (results.length > 0) {
+              // We got a full road result from keyword search
+              return {
+                roadNumberInput: results[0].roadNumber,
+                selectedRoad: results[0],
+              };
+            }
+          }
+        } catch {
+          // Ignore search errors
+        }
+      }
+      return null;
+    }
+
+    // We have a road number - now fetch the full road info
+    try {
+      const response = await fetch(`/api/v1/roads/suggest?q=${encodeURIComponent(detectedRoadNumber)}&limit=1`);
+      if (response.ok) {
+        const results = await response.json() as Array<{ id: string; roadNumber: string; roadClass: string; name: string | null }>;
+        if (results.length > 0 && results[0].roadNumber.toUpperCase() === detectedRoadNumber.toUpperCase()) {
+          return {
+            roadNumberInput: results[0].roadNumber,
+            selectedRoad: results[0],
+          };
+        }
+      }
+    } catch {
+      // Ignore fetch errors
+    }
+
+    // Return just the road number without full road info
+    return {
+      roadNumberInput: detectedRoadNumber,
+      selectedRoad: null,
+    };
+  };
+
+  // Auto-detect province, location, and road on mount
   useEffect(() => {
     if (incident.province || incident.locationName) return;
     if (!incident.centroid.latitude || !incident.centroid.longitude) return;
@@ -82,7 +158,7 @@ export function GroupReviewCard({
       }
     )
       .then((res) => res.json() as Promise<{ address?: NominatimAddress }>)
-      .then((data) => {
+      .then(async (data) => {
         if (data.address) {
           const addr = data.address;
           const parts: string[] = [];
@@ -92,6 +168,17 @@ export function GroupReviewCard({
           if (area && !parts.includes(area)) parts.push(area);
           if (parts.length > 0) {
             onUpdateRef.current({ locationName: parts.join(", ") });
+          }
+
+          // Try to detect road number and get full road info from the road name
+          if (addr.road && !incident.roadNumberInput && !incident.selectedRoad) {
+            const roadInfo = await detectRoadAndFetchInfo(addr.road);
+            if (roadInfo) {
+              onUpdateRef.current({
+                roadNumberInput: roadInfo.roadNumberInput,
+                selectedRoad: roadInfo.selectedRoad,
+              });
+            }
           }
 
           // Try to detect district from multiple address fields
@@ -110,7 +197,7 @@ export function GroupReviewCard({
                 .toLowerCase()
                 .replace(/\s*district\s*/gi, "")
                 .trim();
-              
+
               // Try flexible matching
               const matchedDistrict = districts.find((d) => {
                 const dName = d.name.toLowerCase();
@@ -131,7 +218,7 @@ export function GroupReviewCard({
       })
       .catch((err) => console.error("Reverse geocoding failed:", err))
       .finally(() => setIsLoadingLocation(false));
-  }, [incident.centroid, incident.province, incident.locationName]);
+  }, [incident.centroid, incident.province, incident.locationName, incident.roadNumberInput, incident.selectedRoad]);
 
   // Check if incident has minimum required fields
   const isComplete = !!(
@@ -305,13 +392,21 @@ export function GroupReviewCard({
               </div>
             </div>
 
+            {/* Road Number Picker */}
+            <RoadNumberInput
+              value={incident.roadNumberInput || ""}
+              selectedRoad={incident.selectedRoad}
+              onChange={(value) => onUpdate({ roadNumberInput: value })}
+              onRoadSelect={(road) => onUpdate({ selectedRoad: road })}
+            />
+
             <div className="space-y-1.5">
               <Label htmlFor={`location-${incident.groupId}`} className="text-sm">
-                Road / Location Name
+                Location Name
               </Label>
               <Input
                 id={`location-${incident.groupId}`}
-                placeholder={isLoadingLocation ? "Detecting..." : "Enter location"}
+                placeholder={isLoadingLocation ? "Detecting..." : "Enter location name"}
                 value={incident.locationName}
                 onChange={(e) => onUpdate({ locationName: e.target.value })}
                 className="h-10"
