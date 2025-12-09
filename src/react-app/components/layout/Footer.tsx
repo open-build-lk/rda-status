@@ -8,8 +8,8 @@ export function Footer() {
 
   useEffect(() => {
     fetch("/api/v1/map/last-updated")
-      .then((res) => res.json())
-      .then((data: { lastUpdated: string | null }) => {
+      .then((res) => res.json() as Promise<{ lastUpdated: string | null }>)
+      .then((data) => {
         if (data.lastUpdated) {
           setLastUpdated(new Date(data.lastUpdated));
         }
