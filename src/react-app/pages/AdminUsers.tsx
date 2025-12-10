@@ -95,6 +95,7 @@ interface PendingInvitation {
   status: string;
   expiresAt: string;
   createdAt: string;
+  isExpired?: boolean;
 }
 
 interface Organization {
@@ -784,9 +785,15 @@ export function AdminUsers() {
                       {roleLabels[inv.role] || inv.role}
                     </span>
                   </div>
-                  <span className="text-xs text-gray-500">
-                    Expires {formatDistanceToNow(new Date(inv.expiresAt))}
-                  </span>
+                  {inv.isExpired ? (
+                    <span className="text-xs text-red-600 font-medium">
+                      Expired
+                    </span>
+                  ) : (
+                    <span className="text-xs text-gray-500">
+                      Expires {new Date(inv.expiresAt).toLocaleDateString()}
+                    </span>
+                  )}
                 </div>
                 <Button
                   variant="ghost"

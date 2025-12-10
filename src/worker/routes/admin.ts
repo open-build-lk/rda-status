@@ -898,8 +898,8 @@ adminRoutes.get("/users", requireRole("super_admin", "admin"), async (c) => {
     organizations: membershipsByUser.get(u.id) || [],
   }));
 
-  // Get pending invitations
-  const pendingInvitations = await db
+  // Get pending invitations (including expired ones for visibility)
+  const allPendingInvitations = await db
     .select({
       id: userInvitations.id,
       email: userInvitations.email,
@@ -911,6 +911,13 @@ adminRoutes.get("/users", requireRole("super_admin", "admin"), async (c) => {
     .from(userInvitations)
     .where(eq(userInvitations.status, "pending"))
     .orderBy(desc(userInvitations.createdAt));
+
+  // Mark expired invitations and separate them
+  const now = new Date();
+  const pendingInvitations = allPendingInvitations.map(inv => ({
+    ...inv,
+    isExpired: inv.expiresAt ? new Date(inv.expiresAt) < now : false,
+  }));
 
   // Get all organizations for filter dropdown
   const orgs = await db

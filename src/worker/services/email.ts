@@ -70,6 +70,15 @@ export function getMagicLinkEmailHtml(url: string): string {
   `);
 }
 
+// Role descriptions for invitation emails
+const ROLE_DESCRIPTIONS: Record<string, string> = {
+  admin: "Full access to manage users, reports, organizations, and system settings.",
+  rda_admin: "Manage road damage reports, assign work to organizations, and oversee province-wide operations.",
+  org_admin: "Manage your organization's team members and oversee assigned road repair work.",
+  field_officer: "Update progress on assigned road repairs, upload photos, and mark work as complete.",
+  viewer: "View road status reports and track repair progress across the system.",
+};
+
 export function getInvitationEmailHtml(params: {
   inviterName: string;
   role: string;
@@ -77,6 +86,7 @@ export function getInvitationEmailHtml(params: {
   expiresAt: Date;
 }): string {
   const roleLabel = params.role.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const roleDescription = ROLE_DESCRIPTIONS[params.role] || "Access the Sri Lanka Road Status platform.";
   const expiryDate = params.expiresAt.toLocaleDateString("en-US", {
     weekday: "long",
     year: "numeric",
@@ -87,10 +97,14 @@ export function getInvitationEmailHtml(params: {
   return wrapInEmailTemplate(`
     <h1 style="color: #1a1a1a; font-size: 24px; margin-bottom: 16px;">You're Invited to Sri Lanka Road Status</h1>
     <p style="color: #666; font-size: 16px; line-height: 1.5; margin-bottom: 16px;">
-      <strong>${params.inviterName}</strong> has invited you to join the Sri Lanka Road Status platform as a <strong>${roleLabel}</strong>.
+      <strong>${params.inviterName}</strong> has invited you to join the Sri Lanka Road Status platform.
     </p>
-    <p style="color: #666; font-size: 16px; line-height: 1.5; margin-bottom: 24px;">
-      This invitation will expire on <strong>${expiryDate}</strong>.
+    <div style="background-color: #f0f9ff; border-left: 4px solid #2563eb; padding: 16px; margin-bottom: 20px; border-radius: 0 6px 6px 0;">
+      <p style="color: #1e40af; font-size: 14px; font-weight: 600; margin: 0 0 4px 0;">Your Role: ${roleLabel}</p>
+      <p style="color: #1e3a5f; font-size: 14px; margin: 0; line-height: 1.4;">${roleDescription}</p>
+    </div>
+    <p style="color: #666; font-size: 14px; line-height: 1.5; margin-bottom: 24px;">
+      This invitation expires on <strong>${expiryDate}</strong>.
     </p>
     <a href="${params.inviteUrl}" style="display: inline-block; background-color: #2563eb; color: white; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 500; font-size: 16px;">
       Accept Invitation
