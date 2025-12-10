@@ -2,8 +2,8 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { createDb } from "../db";
-import { damageReports, roadSegments, mediaAttachments, user, userInvitations, locations, organizations, classificationHistory, userOrganizations, stateTransitions, session } from "../db/schema";
-import { eq, desc, or, isNull, and } from "drizzle-orm";
+import { damageReports, roadSegments, mediaAttachments, user, userInvitations, locations, organizations, classificationHistory, userOrganizations, stateTransitions, session, account, verification } from "../db/schema";
+import { eq, desc, or, isNull, and, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { sendEmail, getInvitationEmailHtml } from "../services/email";
 import { recordAuditEntries, createFieldChangeEntries } from "../services/audit";
@@ -18,6 +18,15 @@ import { authMiddleware, requireRole } from "../middleware/auth";
 import { isValidTransition, getAllowedTransitions } from "../../shared/constants";
 
 const adminRoutes = new Hono<{ Bindings: Env }>();
+
+// Generate random string like better-auth does for magic link tokens
+// Uses a-z and A-Z characters, 32 characters long
+function generateRandomString(length: number): string {
+  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const array = new Uint8Array(length);
+  crypto.getRandomValues(array);
+  return Array.from(array, (byte) => chars[byte % chars.length]).join("");
+}
 
 // Apply auth middleware to all admin routes - requires login
 adminRoutes.use("/*", authMiddleware());
@@ -991,7 +1000,11 @@ adminRoutes.post(
     // Generate invitation token and ID
     const inviteId = crypto.randomUUID();
     const token = crypto.randomUUID();
+    // Magic link token for auto-login - must match better-auth format:
+    // 32 character random string using a-z and A-Z
+    const magicToken = generateRandomString(32);
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    const now = new Date();
 
     // Create invitation record
     await db.insert(userInvitations).values({
@@ -1006,12 +1019,25 @@ adminRoutes.post(
       expiresAt,
     });
 
+    // Create magic link verification token in the EXACT format better-auth expects:
+    // - identifier: the token itself (not email)
+    // - value: JSON string with {email, name}
+    // This matches how better-auth's signInMagicLink endpoint stores tokens
+    await db.insert(verification).values({
+      id: crypto.randomUUID(),
+      identifier: magicToken, // Token is stored as identifier
+      value: JSON.stringify({ email, name: "" }), // Email stored in value as JSON
+      expiresAt,
+      createdAt: now,
+      updatedAt: now,
+    });
+
     // Get inviter name for email
     const inviterName = auth?.name || "An administrator";
 
-    // Build invitation URL
+    // Build invitation URL with both tokens
     const baseUrl = c.req.header("origin") || "https://road-lk.org";
-    const inviteUrl = `${baseUrl}/accept-invite?token=${token}`;
+    const inviteUrl = `${baseUrl}/accept-invite?token=${token}&magicToken=${magicToken}`;
 
     // Send invitation email
     try {
@@ -1174,14 +1200,37 @@ adminRoutes.delete(
     }
 
     try {
-      // Delete related records first (to avoid FK constraints)
+      // Handle all foreign key references before deleting user
       // 1. Delete user's sessions
       await db.delete(session).where(eq(session.userId, id));
 
-      // 2. Delete user's organization memberships
+      // 2. Delete user's accounts (OAuth/password records)
+      await db.delete(account).where(eq(account.userId, id));
+
+      // 3. Delete user's organization memberships
       await db.delete(userOrganizations).where(eq(userOrganizations.userId, id));
 
-      // 3. Delete the user
+      // 4. Set nullable FK references to NULL using raw SQL for reliability
+      // Some tables have broken FK constraints (referencing non-existent 'users' table)
+      // so we wrap each in try-catch and continue on error
+      const nullifyQueries = [
+        sql`UPDATE user_invitations SET invited_by = NULL WHERE invited_by = ${id}`,
+        sql`UPDATE damage_reports SET submitter_id = NULL WHERE submitter_id = ${id}`,
+        sql`UPDATE state_transitions SET user_id = NULL WHERE user_id = ${id}`,
+        sql`UPDATE rebuild_projects SET project_manager_id = NULL WHERE project_manager_id = ${id}`,
+        sql`UPDATE report_project_links SET linked_by = NULL WHERE linked_by = ${id}`,
+        sql`UPDATE priority_config SET created_by = NULL WHERE created_by = ${id}`,
+        sql`UPDATE comments SET user_id = NULL WHERE user_id = ${id}`,
+      ];
+      for (const query of nullifyQueries) {
+        try {
+          await db.run(query);
+        } catch (e) {
+          console.warn("Non-fatal error nullifying FK reference:", e);
+        }
+      }
+
+      // 4. Delete the user
       await db.delete(user).where(eq(user.id, id));
 
       // Record audit entry for user deletion
@@ -1295,8 +1344,10 @@ adminRoutes.post(
       }
     }
 
-    // Generate new token and extend expiry
+    // Generate new token, magic token, and extend expiry
     const newToken = crypto.randomUUID();
+    // Magic link token - must match better-auth format (32 char a-zA-Z)
+    const newMagicToken = generateRandomString(32);
     const newExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
     const now = new Date();
 
@@ -1311,12 +1362,22 @@ adminRoutes.post(
       })
       .where(eq(userInvitations.id, id));
 
+    // Create magic link verification token in the EXACT format better-auth expects
+    await db.insert(verification).values({
+      id: crypto.randomUUID(),
+      identifier: newMagicToken, // Token is stored as identifier
+      value: JSON.stringify({ email: invitation.email, name: "" }), // Email stored in value as JSON
+      expiresAt: newExpiresAt,
+      createdAt: now,
+      updatedAt: now,
+    });
+
     // Get inviter name for email
     const inviterName = auth?.name || "An administrator";
 
-    // Build invitation URL
+    // Build invitation URL with both tokens
     const baseUrl = c.req.header("origin") || "https://road-lk.org";
-    const inviteUrl = `${baseUrl}/accept-invite?token=${newToken}`;
+    const inviteUrl = `${baseUrl}/accept-invite?token=${newToken}&magicToken=${newMagicToken}`;
 
     // Send invitation email
     try {

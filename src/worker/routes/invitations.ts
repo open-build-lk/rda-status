@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { createDb } from "../db";
-import { user, userInvitations, session } from "../db/schema";
+import { user, userInvitations } from "../db/schema";
 import { eq } from "drizzle-orm";
 import { recordAuditEntries } from "../services/audit";
 
@@ -11,6 +11,7 @@ const invitationsRoutes = new Hono<{ Bindings: Env }>();
 // Schema for accepting invitation
 const acceptInviteSchema = z.object({
   token: z.string().uuid(),
+  magicToken: z.string().min(32).max(32), // Magic link token - 32 char string (better-auth format)
   name: z.string().min(1).max(100),
   designation: z.string().max(100).optional(),
 });
@@ -60,13 +61,16 @@ invitationsRoutes.get("/:token", async (c) => {
   });
 });
 
-// POST /api/v1/invitations/accept - Accept invitation and create user + session
+// POST /api/v1/invitations/accept - Accept invitation and create user
+// The magicToken was created when the invitation was sent and is used for auto-login
 invitationsRoutes.post(
   "/accept",
   zValidator("json", acceptInviteSchema),
   async (c) => {
     const db = createDb(c.env.DB);
-    const { token, name, designation } = c.req.valid("json");
+    const { token, magicToken: _magicToken, name, designation } = c.req.valid("json");
+    // Note: magicToken is validated but not used server-side
+    // Frontend sends it here for validation, then uses it for redirect to /api/auth/magic-link/verify
 
     // Get invitation
     const [invitation] = await db
@@ -105,9 +109,6 @@ invitationsRoutes.post(
 
     const now = new Date();
     const userId = crypto.randomUUID();
-    const sessionId = crypto.randomUUID();
-    const sessionToken = crypto.randomUUID();
-    const sessionExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
 
     try {
       // Create user (use user-provided designation, or fallback to invite-provided)
@@ -123,18 +124,6 @@ invitationsRoutes.post(
         createdAt: now,
         updatedAt: now,
         lastLogin: now,
-      });
-
-      // Create session for immediate login
-      await db.insert(session).values({
-        id: sessionId,
-        userId,
-        token: sessionToken,
-        expiresAt: sessionExpiry,
-        createdAt: now,
-        updatedAt: now,
-        ipAddress: c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for"),
-        userAgent: c.req.header("user-agent"),
       });
 
       // Mark invitation as accepted
@@ -153,19 +142,12 @@ invitationsRoutes.post(
         fieldName: "status",
         oldValue: "pending",
         newValue: "accepted",
-        performedBy: userId, // The newly created user
+        performedBy: userId,
         performerRole: invitation.role,
         metadata: { email: invitation.email, acceptedAt: now.toISOString() },
       }]);
 
-      // Set session cookie in response headers (better-auth compatible format)
-      const isProduction = c.req.url.startsWith("https://");
-      const cookieFlags = isProduction
-        ? "Path=/; Max-Age=2592000; SameSite=Lax; Secure; HttpOnly"
-        : "Path=/; Max-Age=2592000; SameSite=Lax; HttpOnly";
-      c.header("Set-Cookie", `better-auth.session_token=${sessionToken}; ${cookieFlags}`);
-
-      // Return success with user info (session token still included for reference)
+      // Return success - frontend will redirect to magic-link/verify with the magicToken
       return c.json({
         success: true,
         user: {
@@ -173,10 +155,6 @@ invitationsRoutes.post(
           name,
           email: invitation.email,
           role: invitation.role,
-        },
-        session: {
-          token: sessionToken,
-          expiresAt: sessionExpiry,
         },
       });
     } catch (error) {

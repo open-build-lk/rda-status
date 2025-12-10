@@ -32,6 +32,7 @@ export function AcceptInvitation() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const token = searchParams.get("token");
+  const magicToken = searchParams.get("magicToken");
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,14 +43,14 @@ export function AcceptInvitation() {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    if (!token) {
-      setError("Invalid invitation link - no token provided");
+    if (!token || !magicToken) {
+      setError("Invalid invitation link - missing required tokens");
       setLoading(false);
       return;
     }
 
     fetchInvitation();
-  }, [token]);
+  }, [token, magicToken]);
 
   const fetchInvitation = async () => {
     try {
@@ -72,21 +73,22 @@ export function AcceptInvitation() {
   };
 
   const handleAccept = async () => {
-    if (!name.trim() || !token) return;
+    if (!name.trim() || !token || !magicToken) return;
     setAccepting(true);
     try {
       const response = await fetch("/api/v1/invitations/accept", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           token,
+          magicToken,
           name: name.trim(),
           ...(designation.trim() && { designation: designation.trim() }),
         }),
       });
       const data = await response.json() as {
         error?: string;
-        session?: { token: string; expiresAt: string };
         user?: { id: string; name: string; email: string; role: string };
       };
 
@@ -94,15 +96,13 @@ export function AcceptInvitation() {
         throw new Error(data.error || "Failed to accept invitation");
       }
 
-      // Session cookie is set by the server via Set-Cookie header
-      // No need to manually set it here
       setSuccess(true);
 
-      // Redirect to home after a brief delay
+      // Redirect to magic link verify to complete login
+      // The magicToken was created when the invitation was sent
       setTimeout(() => {
-        // Force a full page reload to ensure auth state is refreshed
-        window.location.href = "/";
-      }, 2000);
+        window.location.href = `/api/auth/magic-link/verify?token=${magicToken}&callbackURL=/`;
+      }, 1000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to accept invitation");
     } finally {
@@ -129,7 +129,7 @@ export function AcceptInvitation() {
               </div>
               <h2 className="mt-4 text-xl font-semibold">Welcome!</h2>
               <p className="mt-2 text-gray-500">
-                Your account has been created successfully. Redirecting you to the dashboard...
+                Your account has been created successfully. Signing you in...
               </p>
               <Loader2 className="w-5 h-5 animate-spin mx-auto mt-4 text-primary-600" />
             </div>
