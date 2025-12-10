@@ -52,6 +52,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Mail,
+  Send,
   Trash2,
   Shield,
   ShieldCheck,
@@ -279,6 +280,27 @@ export function AdminUsers() {
       fetchUsers();
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to cancel invitation");
+    }
+  };
+
+  const [resendingId, setResendingId] = useState<string | null>(null);
+
+  const handleResendInvitation = async (id: string) => {
+    setResendingId(id);
+    try {
+      const response = await fetch(`/api/v1/admin/users/invitations/${id}/resend`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await response.json() as { error?: string; success?: boolean };
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to resend invitation");
+      }
+      fetchUsers();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to resend invitation");
+    } finally {
+      setResendingId(null);
     }
   };
 
@@ -795,14 +817,31 @@ export function AdminUsers() {
                     </span>
                   )}
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleCancelInvitation(inv.id)}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleResendInvitation(inv.id)}
+                    disabled={resendingId === inv.id}
+                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    title="Resend invitation"
+                  >
+                    {resendingId === inv.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleCancelInvitation(inv.id)}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    title="Cancel invitation"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>

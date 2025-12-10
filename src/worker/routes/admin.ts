@@ -1160,6 +1160,82 @@ adminRoutes.delete(
   }
 );
 
+// POST /api/v1/admin/users/invitations/:id/resend - Resend invitation email
+adminRoutes.post(
+  "/users/invitations/:id/resend",
+  requireRole("super_admin"),
+  async (c) => {
+    const db = createDb(c.env.DB);
+    const auth = getAuth(c);
+    const { id } = c.req.param();
+
+    const [invitation] = await db
+      .select()
+      .from(userInvitations)
+      .where(eq(userInvitations.id, id));
+
+    if (!invitation) {
+      return c.json({ error: "Invitation not found" }, 404);
+    }
+
+    if (invitation.status !== "pending") {
+      return c.json({ error: "Can only resend pending invitations" }, 400);
+    }
+
+    // Generate new token and extend expiry
+    const newToken = crypto.randomUUID();
+    const newExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+    // Update invitation with new token and expiry
+    await db
+      .update(userInvitations)
+      .set({
+        token: newToken,
+        expiresAt: newExpiresAt,
+      })
+      .where(eq(userInvitations.id, id));
+
+    // Get inviter name for email
+    const inviterName = auth?.name || "An administrator";
+
+    // Build invitation URL
+    const baseUrl = c.req.header("origin") || "https://road-lk.org";
+    const inviteUrl = `${baseUrl}/accept-invite?token=${newToken}`;
+
+    // Send invitation email
+    try {
+      await sendEmail(
+        c.env,
+        invitation.email,
+        "Reminder: You're Invited to Sri Lanka Road Status",
+        getInvitationEmailHtml({
+          inviterName,
+          role: invitation.role,
+          inviteUrl,
+          expiresAt: newExpiresAt,
+        })
+      );
+    } catch (error) {
+      console.error("Failed to resend invitation email:", error);
+      return c.json({ error: "Failed to send invitation email" }, 500);
+    }
+
+    // Record audit entry for invitation resent
+    await recordAuditEntries(db, [{
+      targetType: "invitation",
+      targetId: id,
+      fieldName: "resent",
+      oldValue: null,
+      newValue: newExpiresAt.toISOString(),
+      performedBy: auth?.userId || null,
+      performerRole: auth?.role || null,
+      metadata: { email: invitation.email, role: invitation.role },
+    }]);
+
+    return c.json({ success: true, expiresAt: newExpiresAt });
+  }
+);
+
 // GET /api/v1/admin/users/:id/audit-trail - Get audit trail for a user
 adminRoutes.get(
   "/users/:id/audit-trail",
