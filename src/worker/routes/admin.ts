@@ -913,6 +913,7 @@ adminRoutes.get("/users", requireRole("super_admin", "admin"), async (c) => {
   }));
 
   // Get pending invitations (including expired ones for visibility)
+  // Include the token so we can build the invite URL for copy
   const allPendingInvitations = await db
     .select({
       id: userInvitations.id,
@@ -923,10 +924,36 @@ adminRoutes.get("/users", requireRole("super_admin", "admin"), async (c) => {
       createdAt: userInvitations.createdAt,
       resendCount: userInvitations.resendCount,
       lastResentAt: userInvitations.lastResentAt,
+      token: userInvitations.token, // Include token for building invite URL
     })
     .from(userInvitations)
     .where(eq(userInvitations.status, "pending"))
     .orderBy(desc(userInvitations.createdAt));
+
+  // Get magic tokens from verification table for each invitation's email
+  // The magicToken is stored as the identifier, and the email is in the value JSON
+  // Note: expires_at is stored as Unix timestamp (seconds), so compare with unixepoch('now')
+  const verificationTokens = await db
+    .select({
+      identifier: verification.identifier,
+      value: verification.value,
+      expiresAt: verification.expiresAt,
+    })
+    .from(verification)
+    .where(sql`${verification.expiresAt} > unixepoch('now')`);
+
+  // Build a map of email -> magicToken
+  const emailToMagicToken = new Map<string, string>();
+  for (const v of verificationTokens) {
+    try {
+      const parsed = JSON.parse(v.value) as { email?: string };
+      if (parsed.email) {
+        emailToMagicToken.set(parsed.email, v.identifier);
+      }
+    } catch {
+      // Skip invalid JSON
+    }
+  }
 
   // Mark expired invitations and calculate resend availability
   const now = new Date();
@@ -939,6 +966,9 @@ adminRoutes.get("/users", requireRole("super_admin", "admin"), async (c) => {
       ? Math.max(0, Math.ceil((RESEND_COOLOFF_MS_CHECK - (now.getTime() - inv.lastResentAt.getTime())) / 60000))
       : 0;
 
+    // Get the magicToken for this invitation's email
+    const magicToken = emailToMagicToken.get(inv.email);
+
     return {
       ...inv,
       isExpired,
@@ -946,6 +976,8 @@ adminRoutes.get("/users", requireRole("super_admin", "admin"), async (c) => {
       canResend: !isExpired && canResend,
       resendsRemaining: Math.max(0, 3 - resendCount),
       cooloffMinutes: cooloffRemaining,
+      // Include invite URL if we have both tokens
+      inviteUrl: magicToken ? `/accept-invite?token=${inv.token}&magicToken=${magicToken}` : null,
     };
   });
 

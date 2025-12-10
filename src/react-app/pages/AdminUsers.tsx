@@ -65,6 +65,8 @@ import {
   Settings2,
   Filter,
   History,
+  Copy,
+  Check,
 } from "lucide-react";
 import { UserAuditTimeline } from "@/components/admin/UserAuditTimeline";
 
@@ -102,6 +104,7 @@ interface PendingInvitation {
   canResend?: boolean;
   resendsRemaining?: number;
   cooloffMinutes?: number;
+  inviteUrl?: string | null; // Full invite URL for copy/share
 }
 
 interface Organization {
@@ -301,6 +304,19 @@ export function AdminUsers() {
   };
 
   const [resendingId, setResendingId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopyInviteLink = async (inv: PendingInvitation) => {
+    if (!inv.inviteUrl) return;
+    const fullUrl = `${window.location.origin}${inv.inviteUrl}`;
+    try {
+      await navigator.clipboard.writeText(fullUrl);
+      setCopiedId(inv.id);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
 
   const handleResendInvitation = async (id: string) => {
     setResendingId(id);
@@ -870,6 +886,21 @@ export function AdminUsers() {
                     </span>
                   )}
                   <div className="flex items-center gap-1">
+                    {/* Copy Link button */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleCopyInviteLink(inv)}
+                      disabled={!inv.inviteUrl}
+                      className="text-gray-600 hover:text-gray-700 hover:bg-gray-100 disabled:text-gray-300 disabled:hover:bg-transparent"
+                      title={inv.inviteUrl ? "Copy invite link" : "Link not available"}
+                    >
+                      {copiedId === inv.id ? (
+                        <Check className="w-4 h-4 text-green-600" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"
