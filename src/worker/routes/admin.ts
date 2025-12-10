@@ -1173,33 +1173,41 @@ adminRoutes.delete(
       return c.json({ error: "Cannot delete super admin accounts" }, 400);
     }
 
-    // Delete related records first (to avoid FK constraints)
-    // 1. Delete user's sessions
-    await db.delete(session).where(eq(session.userId, id));
+    try {
+      // Delete related records first (to avoid FK constraints)
+      // 1. Delete user's sessions
+      await db.delete(session).where(eq(session.userId, id));
 
-    // 2. Delete user's organization memberships
-    await db.delete(userOrganizations).where(eq(userOrganizations.userId, id));
+      // 2. Delete user's organization memberships
+      await db.delete(userOrganizations).where(eq(userOrganizations.userId, id));
 
-    // 3. Delete the user
-    await db.delete(user).where(eq(user.id, id));
+      // 3. Delete the user
+      await db.delete(user).where(eq(user.id, id));
 
-    // Record audit entry for user deletion
-    await recordAuditEntries(db, [{
-      targetType: "user",
-      targetId: id,
-      fieldName: "deleted",
-      oldValue: "active",
-      newValue: "deleted",
-      performedBy: auth?.userId || null,
-      performerRole: auth?.role || null,
-      metadata: {
-        deletedUserEmail: existingUser.email,
-        deletedUserName: existingUser.name,
-        deletedUserRole: existingUser.role,
-      },
-    }]);
+      // Record audit entry for user deletion
+      await recordAuditEntries(db, [{
+        targetType: "user",
+        targetId: id,
+        fieldName: "deleted",
+        oldValue: "active",
+        newValue: "deleted",
+        performedBy: auth?.userId || null,
+        performerRole: auth?.role || null,
+        metadata: {
+          deletedUserEmail: existingUser.email,
+          deletedUserName: existingUser.name,
+          deletedUserRole: existingUser.role,
+        },
+      }]);
 
-    return c.json({ success: true });
+      return c.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      return c.json({
+        error: "Failed to delete user",
+        details: error instanceof Error ? error.message : String(error),
+      }, 500);
+    }
   }
 );
 
