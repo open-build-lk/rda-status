@@ -97,6 +97,10 @@ interface PendingInvitation {
   expiresAt: string;
   createdAt: string;
   isExpired?: boolean;
+  resendCount?: number;
+  canResend?: boolean;
+  resendsRemaining?: number;
+  cooloffMinutes?: number;
 }
 
 interface Organization {
@@ -817,30 +821,46 @@ export function AdminUsers() {
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleResendInvitation(inv.id)}
-                    disabled={resendingId === inv.id}
-                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                    title="Resend invitation"
-                  >
-                    {resendingId === inv.id ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Send className="w-4 h-4" />
-                    )}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleCancelInvitation(inv.id)}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    title="Cancel invitation"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                <div className="flex items-center gap-2">
+                  {/* Resend info */}
+                  {inv.resendsRemaining !== undefined && inv.resendsRemaining < 3 && (
+                    <span className="text-xs text-gray-400">
+                      {inv.resendsRemaining > 0 ? `${inv.resendsRemaining} left` : "No resends"}
+                    </span>
+                  )}
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleResendInvitation(inv.id)}
+                      disabled={resendingId === inv.id || !inv.canResend}
+                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 disabled:text-gray-300 disabled:hover:bg-transparent"
+                      title={
+                        !inv.canResend
+                          ? inv.resendsRemaining === 0
+                            ? "Maximum resends reached"
+                            : inv.cooloffMinutes
+                              ? `Wait ${inv.cooloffMinutes} min`
+                              : "Cannot resend"
+                          : "Resend invitation"
+                      }
+                    >
+                      {resendingId === inv.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Send className="w-4 h-4" />
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleCancelInvitation(inv.id)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      title="Cancel invitation"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}

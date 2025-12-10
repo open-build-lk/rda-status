@@ -907,17 +907,33 @@ adminRoutes.get("/users", requireRole("super_admin", "admin"), async (c) => {
       status: userInvitations.status,
       expiresAt: userInvitations.expiresAt,
       createdAt: userInvitations.createdAt,
+      resendCount: userInvitations.resendCount,
+      lastResentAt: userInvitations.lastResentAt,
     })
     .from(userInvitations)
     .where(eq(userInvitations.status, "pending"))
     .orderBy(desc(userInvitations.createdAt));
 
-  // Mark expired invitations and separate them
+  // Mark expired invitations and calculate resend availability
   const now = new Date();
-  const pendingInvitations = allPendingInvitations.map(inv => ({
-    ...inv,
-    isExpired: inv.expiresAt ? new Date(inv.expiresAt) < now : false,
-  }));
+  const RESEND_COOLOFF_MS_CHECK = 60 * 60 * 1000; // 1 hour
+  const pendingInvitations = allPendingInvitations.map(inv => {
+    const isExpired = inv.expiresAt ? new Date(inv.expiresAt) < now : false;
+    const resendCount = inv.resendCount ?? 0;
+    const canResend = resendCount < 3 && (!inv.lastResentAt || (now.getTime() - inv.lastResentAt.getTime() >= RESEND_COOLOFF_MS_CHECK));
+    const cooloffRemaining = inv.lastResentAt
+      ? Math.max(0, Math.ceil((RESEND_COOLOFF_MS_CHECK - (now.getTime() - inv.lastResentAt.getTime())) / 60000))
+      : 0;
+
+    return {
+      ...inv,
+      isExpired,
+      resendCount,
+      canResend: !isExpired && canResend,
+      resendsRemaining: Math.max(0, 3 - resendCount),
+      cooloffMinutes: cooloffRemaining,
+    };
+  });
 
   // Get all organizations for filter dropdown
   const orgs = await db
@@ -1161,6 +1177,10 @@ adminRoutes.delete(
 );
 
 // POST /api/v1/admin/users/invitations/:id/resend - Resend invitation email
+// Max 3 resends, with 1 hour cooloff between resends
+const MAX_RESENDS = 3;
+const RESEND_COOLOFF_MS = 60 * 60 * 1000; // 1 hour
+
 adminRoutes.post(
   "/users/invitations/:id/resend",
   requireRole("super_admin"),
@@ -1182,16 +1202,34 @@ adminRoutes.post(
       return c.json({ error: "Can only resend pending invitations" }, 400);
     }
 
+    // Check resend limit
+    const resendCount = invitation.resendCount ?? 0;
+    if (resendCount >= MAX_RESENDS) {
+      return c.json({ error: "Maximum resend limit reached (3 times)" }, 400);
+    }
+
+    // Check cooloff period
+    if (invitation.lastResentAt) {
+      const timeSinceLastResend = Date.now() - invitation.lastResentAt.getTime();
+      if (timeSinceLastResend < RESEND_COOLOFF_MS) {
+        const minutesRemaining = Math.ceil((RESEND_COOLOFF_MS - timeSinceLastResend) / 60000);
+        return c.json({ error: `Please wait ${minutesRemaining} minutes before resending` }, 400);
+      }
+    }
+
     // Generate new token and extend expiry
     const newToken = crypto.randomUUID();
     const newExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    const now = new Date();
 
-    // Update invitation with new token and expiry
+    // Update invitation with new token, expiry, and resend tracking
     await db
       .update(userInvitations)
       .set({
         token: newToken,
         expiresAt: newExpiresAt,
+        resendCount: resendCount + 1,
+        lastResentAt: now,
       })
       .where(eq(userInvitations.id, id));
 
@@ -1225,14 +1263,19 @@ adminRoutes.post(
       targetType: "invitation",
       targetId: id,
       fieldName: "resent",
-      oldValue: null,
-      newValue: newExpiresAt.toISOString(),
+      oldValue: String(resendCount),
+      newValue: String(resendCount + 1),
       performedBy: auth?.userId || null,
       performerRole: auth?.role || null,
-      metadata: { email: invitation.email, role: invitation.role },
+      metadata: { email: invitation.email, role: invitation.role, expiresAt: newExpiresAt.toISOString() },
     }]);
 
-    return c.json({ success: true, expiresAt: newExpiresAt });
+    return c.json({
+      success: true,
+      expiresAt: newExpiresAt,
+      resendCount: resendCount + 1,
+      resendsRemaining: MAX_RESENDS - (resendCount + 1),
+    });
   }
 );
 

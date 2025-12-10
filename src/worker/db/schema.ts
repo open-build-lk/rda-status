@@ -24,6 +24,8 @@ export const userInvitations = sqliteTable(
     status: text("status").notNull().default("pending"), // pending, accepted, expired, cancelled
     expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
     acceptedAt: integer("accepted_at", { mode: "timestamp" }),
+    resendCount: integer("resend_count").default(0).notNull(),
+    lastResentAt: integer("last_resent_at", { mode: "timestamp" }),
     createdAt: integer("created_at", { mode: "timestamp" })
       .default(sql`(unixepoch())`)
       .notNull(),
