@@ -15,6 +15,7 @@ import { formatDistanceToNow } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -139,6 +140,7 @@ interface UserAuditEntry {
 
 const roleLabels: Record<string, string> = {
   citizen: "Citizen",
+  engineer: "Engineer",
   field_officer: "Field Officer",
   planner: "Planner",
   admin: "Admin",
@@ -148,6 +150,7 @@ const roleLabels: Record<string, string> = {
 
 const roleColors: Record<string, string> = {
   citizen: "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400",
+  engineer: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
   field_officer: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
   planner: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
   admin: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
@@ -157,6 +160,7 @@ const roleColors: Record<string, string> = {
 
 const roleOptions = [
   { value: "citizen", label: "Citizen" },
+  { value: "engineer", label: "Engineer" },
   { value: "field_officer", label: "Field Officer" },
   { value: "planner", label: "Planner" },
   { value: "admin", label: "Admin" },
@@ -190,7 +194,9 @@ export function AdminUsers() {
   // Invite modal state
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState("field_officer");
+  const [inviteRole, setInviteRole] = useState("engineer");
+  const [inviteDesignation, setInviteDesignation] = useState("");
+  const [inviteNote, setInviteNote] = useState("");
   const [inviteSending, setInviteSending] = useState(false);
 
   // Edit modal state
@@ -252,7 +258,12 @@ export function AdminUsers() {
       const response = await fetch("/api/v1/admin/users/invite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
+        body: JSON.stringify({
+          email: inviteEmail,
+          role: inviteRole,
+          designation: inviteDesignation || undefined,
+          note: inviteNote || undefined,
+        }),
         credentials: "include",
       });
       const data = await response.json() as { error?: string };
@@ -261,7 +272,9 @@ export function AdminUsers() {
       }
       setInviteModalOpen(false);
       setInviteEmail("");
-      setInviteRole("field_officer");
+      setInviteRole("engineer");
+      setInviteDesignation("");
+      setInviteNote("");
       fetchUsers();
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to send invitation");
@@ -1014,6 +1027,30 @@ export function AdminUsers() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="invite-designation">Designation (optional)</Label>
+              <Input
+                id="invite-designation"
+                type="text"
+                placeholder="e.g. Senior Engineer, Project Manager"
+                value={inviteDesignation}
+                onChange={(e) => setInviteDesignation(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="invite-note">Personal Note (optional)</Label>
+              <Textarea
+                id="invite-note"
+                placeholder="Add a personal message to include in the invitation email..."
+                value={inviteNote}
+                onChange={(e) => setInviteNote(e.target.value)}
+                rows={3}
+                maxLength={500}
+              />
+              <p className="text-xs text-gray-500">
+                This note will be shown in the invitation email.
+              </p>
             </div>
           </div>
           <DialogFooter>

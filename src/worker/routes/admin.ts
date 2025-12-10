@@ -836,9 +836,14 @@ adminRoutes.patch(
 // ============ USER MANAGEMENT (Super Admin Only) ============
 
 // Validation schemas
+// "engineer" is an alias for "field_officer"
+const ROLE_VALUES = ["citizen", "field_officer", "engineer", "planner", "admin", "super_admin", "stakeholder"] as const;
+
 const inviteUserSchema = z.object({
   email: z.string().email(),
-  role: z.enum(["citizen", "field_officer", "planner", "admin", "super_admin", "stakeholder"]),
+  role: z.enum(ROLE_VALUES),
+  designation: z.string().max(100).optional(),
+  note: z.string().max(500).optional(),
 });
 
 const updateUserSchema = z.object({
@@ -958,7 +963,10 @@ adminRoutes.post(
   async (c) => {
     const db = createDb(c.env.DB);
     const auth = getAuth(c);
-    const { email, role } = c.req.valid("json");
+    const { email, role: rawRole, designation, note } = c.req.valid("json");
+
+    // Normalize "engineer" to "field_officer" (engineer is an alias)
+    const role = rawRole === "engineer" ? "field_officer" : rawRole;
 
     // Check if user already exists
     const [existingUser] = await db
@@ -990,6 +998,8 @@ adminRoutes.post(
       id: inviteId,
       email,
       role,
+      designation: designation || null,
+      note: note || null,
       invitedBy: auth?.userId || null,
       token,
       status: "pending",
@@ -1014,6 +1024,7 @@ adminRoutes.post(
           role,
           inviteUrl,
           expiresAt,
+          note: note || undefined,
         })
       );
     } catch (error) {

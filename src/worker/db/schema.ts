@@ -19,6 +19,8 @@ export const userInvitations = sqliteTable(
     id: text("id").primaryKey(),
     email: text("email").notNull(),
     role: text("role").notNull(),
+    designation: text("designation"), // Optional job title/designation
+    note: text("note"), // Optional personal note to invitee
     invitedBy: text("invited_by").references(() => user.id),
     token: text("token").notNull().unique(),
     status: text("status").notNull().default("pending"), // pending, accepted, expired, cancelled

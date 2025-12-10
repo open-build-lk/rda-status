@@ -15,6 +15,7 @@ import { Loader2, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
 interface InvitationDetails {
   email: string;
   role: string;
+  designation?: string;
   expiresAt: string;
 }
 
@@ -36,6 +37,7 @@ export function AcceptInvitation() {
   const [error, setError] = useState<string | null>(null);
   const [invitation, setInvitation] = useState<InvitationDetails | null>(null);
   const [name, setName] = useState("");
+  const [designation, setDesignation] = useState("");
   const [accepting, setAccepting] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -58,6 +60,10 @@ export function AcceptInvitation() {
       }
       const data = await response.json() as InvitationDetails;
       setInvitation(data);
+      // Pre-fill designation if provided in invitation
+      if (data.designation) {
+        setDesignation(data.designation);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load invitation");
     } finally {
@@ -72,7 +78,11 @@ export function AcceptInvitation() {
       const response = await fetch("/api/v1/invitations/accept", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, name: name.trim() }),
+        body: JSON.stringify({
+          token,
+          name: name.trim(),
+          ...(designation.trim() && { designation: designation.trim() }),
+        }),
       });
       const data = await response.json() as {
         error?: string;
@@ -197,6 +207,20 @@ export function AcceptInvitation() {
                   placeholder="Enter your full name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  disabled={accepting}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="designation">
+                  Designation / Job Title{" "}
+                  <span className="text-gray-400 font-normal">(optional)</span>
+                </Label>
+                <Input
+                  id="designation"
+                  placeholder="e.g., Senior Engineer, Project Manager"
+                  value={designation}
+                  onChange={(e) => setDesignation(e.target.value)}
                   disabled={accepting}
                 />
               </div>

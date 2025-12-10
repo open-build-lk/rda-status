@@ -12,6 +12,7 @@ const invitationsRoutes = new Hono<{ Bindings: Env }>();
 const acceptInviteSchema = z.object({
   token: z.string().uuid(),
   name: z.string().min(1).max(100),
+  designation: z.string().max(100).optional(),
 });
 
 // GET /api/v1/invitations/:token - Get invitation details (public)
@@ -24,6 +25,7 @@ invitationsRoutes.get("/:token", async (c) => {
       id: userInvitations.id,
       email: userInvitations.email,
       role: userInvitations.role,
+      designation: userInvitations.designation,
       status: userInvitations.status,
       expiresAt: userInvitations.expiresAt,
     })
@@ -53,6 +55,7 @@ invitationsRoutes.get("/:token", async (c) => {
   return c.json({
     email: invitation.email,
     role: invitation.role,
+    designation: invitation.designation,
     expiresAt: invitation.expiresAt,
   });
 });
@@ -63,7 +66,7 @@ invitationsRoutes.post(
   zValidator("json", acceptInviteSchema),
   async (c) => {
     const db = createDb(c.env.DB);
-    const { token, name } = c.req.valid("json");
+    const { token, name, designation } = c.req.valid("json");
 
     // Get invitation
     const [invitation] = await db
@@ -106,12 +109,14 @@ invitationsRoutes.post(
     const sessionToken = crypto.randomUUID();
     const sessionExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
 
-    // Create user
+    // Create user (use user-provided designation, or fallback to invite-provided)
+    const userDesignation = designation || invitation.designation || null;
     await db.insert(user).values({
       id: userId,
       name,
       email: invitation.email,
       role: invitation.role,
+      designation: userDesignation,
       emailVerified: true, // They verified by clicking invite link
       isActive: true,
       createdAt: now,

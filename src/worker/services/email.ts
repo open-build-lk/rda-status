@@ -84,6 +84,7 @@ export function getInvitationEmailHtml(params: {
   role: string;
   inviteUrl: string;
   expiresAt: Date;
+  note?: string;
 }): string {
   const roleLabel = params.role.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   const roleDescription = ROLE_DESCRIPTIONS[params.role] || "Access the Sri Lanka Road Status platform.";
@@ -94,11 +95,20 @@ export function getInvitationEmailHtml(params: {
     day: "numeric",
   });
 
+  // Personal note section (only if note is provided)
+  const noteSection = params.note ? `
+    <div style="background-color: #fefce8; border-left: 4px solid #ca8a04; padding: 16px; margin-bottom: 20px; border-radius: 0 6px 6px 0;">
+      <p style="color: #854d0e; font-size: 14px; font-weight: 600; margin: 0 0 8px 0;">Personal note from ${params.inviterName}:</p>
+      <p style="color: #713f12; font-size: 14px; margin: 0; line-height: 1.5; font-style: italic;">"${params.note}"</p>
+    </div>
+  ` : "";
+
   return wrapInEmailTemplate(`
     <h1 style="color: #1a1a1a; font-size: 24px; margin-bottom: 16px;">You're Invited to Sri Lanka Road Status</h1>
     <p style="color: #666; font-size: 16px; line-height: 1.5; margin-bottom: 16px;">
       <strong>${params.inviterName}</strong> has invited you to join the Sri Lanka Road Status platform.
     </p>
+    ${noteSection}
     <div style="background-color: #f0f9ff; border-left: 4px solid #2563eb; padding: 16px; margin-bottom: 20px; border-radius: 0 6px 6px 0;">
       <p style="color: #1e40af; font-size: 14px; font-weight: 600; margin: 0 0 4px 0;">Your Role: ${roleLabel}</p>
       <p style="color: #1e3a5f; font-size: 14px; margin: 0; line-height: 1.4;">${roleDescription}</p>
