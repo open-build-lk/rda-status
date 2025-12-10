@@ -351,6 +351,34 @@ export function AdminUsers() {
     }
   };
 
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteUser = async () => {
+    if (!editingUser) return;
+
+    // Double confirmation for safety
+    const confirmMsg = `Are you sure you want to permanently delete "${editingUser.name || editingUser.email}"?\n\nThis will:\n• Remove all their sessions\n• Remove organization memberships\n• Permanently delete their account\n\nThis action cannot be undone.`;
+    if (!confirm(confirmMsg)) return;
+
+    setDeleting(true);
+    try {
+      const response = await fetch(`/api/v1/admin/users/${editingUser.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const data = await response.json() as { error?: string };
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to delete user");
+      }
+      setEditingUser(null);
+      fetchUsers();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to delete user");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   // Fetch organizations and user memberships when editing a user
   const fetchOrganizations = async () => {
     try {
@@ -1316,15 +1344,30 @@ export function AdminUsers() {
           )}
 
           <DialogFooter className="border-t pt-4">
+            {editModalTab === "edit" && editingUser?.role !== "super_admin" && (
+              <Button
+                variant="ghost"
+                onClick={handleDeleteUser}
+                disabled={saving || deleting}
+                className="mr-auto text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                {deleting ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4 mr-2" />
+                )}
+                Delete User
+              </Button>
+            )}
             <Button
               variant="outline"
               onClick={() => setEditingUser(null)}
-              disabled={saving}
+              disabled={saving || deleting}
             >
               {editModalTab === "edit" ? "Cancel" : "Close"}
             </Button>
             {editModalTab === "edit" && (
-              <Button onClick={handleSaveUser} disabled={saving}>
+              <Button onClick={handleSaveUser} disabled={saving || deleting}>
                 {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Save Changes
               </Button>

@@ -98,7 +98,12 @@ export function AcceptInvitation() {
       // The session token needs to be set as a cookie for better-auth to recognize it
       if (data.session) {
         // Set session cookie - better-auth uses 'better-auth.session_token'
-        document.cookie = `better-auth.session_token=${data.session.token}; path=/; max-age=${30 * 24 * 60 * 60}; SameSite=Lax`;
+        // In production (HTTPS), cookies need Secure flag
+        const isSecure = window.location.protocol === "https:";
+        const cookieFlags = isSecure
+          ? "path=/; max-age=2592000; SameSite=Lax; Secure"
+          : "path=/; max-age=2592000; SameSite=Lax";
+        document.cookie = `better-auth.session_token=${data.session.token}; ${cookieFlags}`;
       }
 
       setSuccess(true);

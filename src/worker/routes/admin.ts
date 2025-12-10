@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { createDb } from "../db";
-import { damageReports, roadSegments, mediaAttachments, user, userInvitations, locations, organizations, classificationHistory, userOrganizations, stateTransitions } from "../db/schema";
+import { damageReports, roadSegments, mediaAttachments, user, userInvitations, locations, organizations, classificationHistory, userOrganizations, stateTransitions, session } from "../db/schema";
 import { eq, desc, or, isNull, and } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { sendEmail, getInvitationEmailHtml } from "../services/email";
@@ -1141,6 +1141,65 @@ adminRoutes.patch(
       .where(eq(user.id, id));
 
     return c.json({ success: true, user: updated });
+  }
+);
+
+// DELETE /api/v1/admin/users/:id - Delete a user (super_admin only)
+adminRoutes.delete(
+  "/users/:id",
+  requireRole("super_admin"),
+  async (c) => {
+    const db = createDb(c.env.DB);
+    const auth = getAuth(c);
+    const { id } = c.req.param();
+
+    // Check if user exists
+    const [existingUser] = await db
+      .select()
+      .from(user)
+      .where(eq(user.id, id));
+
+    if (!existingUser) {
+      return c.json({ error: "User not found" }, 404);
+    }
+
+    // Prevent self-deletion
+    if (id === auth?.userId) {
+      return c.json({ error: "Cannot delete your own account" }, 400);
+    }
+
+    // Prevent deleting other super_admins (safety measure)
+    if (existingUser.role === "super_admin") {
+      return c.json({ error: "Cannot delete super admin accounts" }, 400);
+    }
+
+    // Delete related records first (to avoid FK constraints)
+    // 1. Delete user's sessions
+    await db.delete(session).where(eq(session.userId, id));
+
+    // 2. Delete user's organization memberships
+    await db.delete(userOrganizations).where(eq(userOrganizations.userId, id));
+
+    // 3. Delete the user
+    await db.delete(user).where(eq(user.id, id));
+
+    // Record audit entry for user deletion
+    await recordAuditEntries(db, [{
+      targetType: "user",
+      targetId: id,
+      fieldName: "deleted",
+      oldValue: "active",
+      newValue: "deleted",
+      performedBy: auth?.userId || null,
+      performerRole: auth?.role || null,
+      metadata: {
+        deletedUserEmail: existingUser.email,
+        deletedUserName: existingUser.name,
+        deletedUserRole: existingUser.role,
+      },
+    }]);
+
+    return c.json({ success: true });
   }
 );
 

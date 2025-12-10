@@ -85,6 +85,7 @@ export function getInvitationEmailHtml(params: {
   inviteUrl: string;
   expiresAt: Date;
   note?: string;
+  sentAt?: Date;
 }): string {
   const roleLabel = params.role.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   const roleDescription = ROLE_DESCRIPTIONS[params.role] || "Access the Sri Lanka Road Status platform.";
@@ -102,6 +103,18 @@ export function getInvitationEmailHtml(params: {
       <p style="color: #713f12; font-size: 14px; margin: 0; line-height: 1.5; font-style: italic;">"${params.note}"</p>
     </div>
   ` : "";
+
+  // Sent timestamp
+  const sentAt = params.sentAt || new Date();
+  const sentTimestamp = sentAt.toLocaleString("en-US", {
+    weekday: "short",
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZoneName: "short",
+  });
 
   return wrapInEmailTemplate(`
     <h1 style="color: #1a1a1a; font-size: 24px; margin-bottom: 16px;">You're Invited to Sri Lanka Road Status</h1>
@@ -121,6 +134,10 @@ export function getInvitationEmailHtml(params: {
     </a>
     <p style="color: #999; font-size: 14px; margin-top: 24px;">
       If you weren't expecting this invitation, you can safely ignore this email.
+    </p>
+    <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 24px 0 16px 0;">
+    <p style="color: #b0b0b0; font-size: 12px; margin: 0; text-align: center;">
+      Sent: ${sentTimestamp}
     </p>
   `);
 }
