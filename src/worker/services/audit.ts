@@ -40,8 +40,9 @@ export async function recordAuditEntries(
       fieldName: entry.fieldName,
       oldValue: entry.oldValue,
       newValue: entry.newValue,
-      fromStatus: entry.fromStatus || null,
-      toStatus: entry.toStatus || null,
+      // Use "n/a" as placeholder for non-status audit entries (production DB may have NOT NULL constraint)
+      fromStatus: entry.fromStatus || "n/a",
+      toStatus: entry.toStatus || "n/a",
       userId: entry.performedBy,
       userRole: entry.performerRole,
       reason: entry.reason || null,

@@ -94,18 +94,8 @@ export function AcceptInvitation() {
         throw new Error(data.error || "Failed to accept invitation");
       }
 
-      // Store the session using better-auth's expected format
-      // The session token needs to be set as a cookie for better-auth to recognize it
-      if (data.session) {
-        // Set session cookie - better-auth uses 'better-auth.session_token'
-        // In production (HTTPS), cookies need Secure flag
-        const isSecure = window.location.protocol === "https:";
-        const cookieFlags = isSecure
-          ? "path=/; max-age=2592000; SameSite=Lax; Secure"
-          : "path=/; max-age=2592000; SameSite=Lax";
-        document.cookie = `better-auth.session_token=${data.session.token}; ${cookieFlags}`;
-      }
-
+      // Session cookie is set by the server via Set-Cookie header
+      // No need to manually set it here
       setSuccess(true);
 
       // Redirect to home after a brief delay

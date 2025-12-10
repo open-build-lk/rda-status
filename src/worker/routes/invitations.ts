@@ -109,68 +109,83 @@ invitationsRoutes.post(
     const sessionToken = crypto.randomUUID();
     const sessionExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
 
-    // Create user (use user-provided designation, or fallback to invite-provided)
-    const userDesignation = designation || invitation.designation || null;
-    await db.insert(user).values({
-      id: userId,
-      name,
-      email: invitation.email,
-      role: invitation.role,
-      designation: userDesignation,
-      emailVerified: true, // They verified by clicking invite link
-      isActive: true,
-      createdAt: now,
-      updatedAt: now,
-      lastLogin: now,
-    });
-
-    // Create session for immediate login
-    await db.insert(session).values({
-      id: sessionId,
-      userId,
-      token: sessionToken,
-      expiresAt: sessionExpiry,
-      createdAt: now,
-      updatedAt: now,
-      ipAddress: c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for"),
-      userAgent: c.req.header("user-agent"),
-    });
-
-    // Mark invitation as accepted
-    await db
-      .update(userInvitations)
-      .set({
-        status: "accepted",
-        acceptedAt: now,
-      })
-      .where(eq(userInvitations.token, token));
-
-    // Record audit entry for invitation accepted
-    await recordAuditEntries(db, [{
-      targetType: "invitation",
-      targetId: invitation.id,
-      fieldName: "status",
-      oldValue: "pending",
-      newValue: "accepted",
-      performedBy: userId, // The newly created user
-      performerRole: invitation.role,
-      metadata: { email: invitation.email, acceptedAt: now.toISOString() },
-    }]);
-
-    // Return session token for client to store
-    return c.json({
-      success: true,
-      user: {
+    try {
+      // Create user (use user-provided designation, or fallback to invite-provided)
+      const userDesignation = designation || invitation.designation || null;
+      await db.insert(user).values({
         id: userId,
         name,
         email: invitation.email,
         role: invitation.role,
-      },
-      session: {
+        designation: userDesignation,
+        emailVerified: true, // They verified by clicking invite link
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+        lastLogin: now,
+      });
+
+      // Create session for immediate login
+      await db.insert(session).values({
+        id: sessionId,
+        userId,
         token: sessionToken,
         expiresAt: sessionExpiry,
-      },
-    });
+        createdAt: now,
+        updatedAt: now,
+        ipAddress: c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for"),
+        userAgent: c.req.header("user-agent"),
+      });
+
+      // Mark invitation as accepted
+      await db
+        .update(userInvitations)
+        .set({
+          status: "accepted",
+          acceptedAt: now,
+        })
+        .where(eq(userInvitations.token, token));
+
+      // Record audit entry for invitation accepted
+      await recordAuditEntries(db, [{
+        targetType: "invitation",
+        targetId: invitation.id,
+        fieldName: "status",
+        oldValue: "pending",
+        newValue: "accepted",
+        performedBy: userId, // The newly created user
+        performerRole: invitation.role,
+        metadata: { email: invitation.email, acceptedAt: now.toISOString() },
+      }]);
+
+      // Set session cookie in response headers (better-auth compatible format)
+      const isProduction = c.req.url.startsWith("https://");
+      const cookieFlags = isProduction
+        ? "Path=/; Max-Age=2592000; SameSite=Lax; Secure; HttpOnly"
+        : "Path=/; Max-Age=2592000; SameSite=Lax; HttpOnly";
+      c.header("Set-Cookie", `better-auth.session_token=${sessionToken}; ${cookieFlags}`);
+
+      // Return success with user info (session token still included for reference)
+      return c.json({
+        success: true,
+        user: {
+          id: userId,
+          name,
+          email: invitation.email,
+          role: invitation.role,
+        },
+        session: {
+          token: sessionToken,
+          expiresAt: sessionExpiry,
+        },
+      });
+    } catch (error) {
+      console.error("Error accepting invitation:", error);
+      return c.json({
+        error: "Failed to create account. Please try again or contact support.",
+        details: error instanceof Error ? error.message : String(error),
+      }, 500);
+    }
   }
 );
 
