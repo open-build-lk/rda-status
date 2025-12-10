@@ -10,6 +10,7 @@ import {
 import { DivIcon, LatLngExpression } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { MapLegend } from "./MapLegend";
+import { IncidentPopupPhotos } from "./IncidentPopupPhotos";
 import { useRoadSegments, ProcessedRoadSegment } from "@/hooks/useRoadSegments";
 import { useCitizenIncidents, ProcessedIncident } from "@/hooks/useCitizenIncidents";
 import { useMapViewStore } from "@/stores/mapView";
@@ -299,42 +300,71 @@ export function DisasterMap() {
             )}
           >
             <Popup>
-              <div className="min-w-48">
-                <div className="mb-2 flex items-center gap-2">
-                  <span className="rounded bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">
-                    Citizen Report
-                  </span>
+              <div className="min-w-48 max-w-64">
+                {/* Status badge */}
+                <div className="mb-1.5">
+                  {incident.status === "verified" && (
+                    <span className="rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                      Verified
+                    </span>
+                  )}
+                  {incident.status === "in_progress" && (
+                    <span className="rounded bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-700">
+                      In Progress{incident.progressPercent > 0 && ` ${incident.progressPercent}%`}
+                    </span>
+                  )}
                   {incident.status === "resolved" && (
                     <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
                       Resolved
                     </span>
                   )}
-                  {incident.status === "in_progress" && (
-                    <span className="rounded bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-700">
-                      In Progress {incident.progressPercent > 0 && `(${incident.progressPercent}%)`}
-                    </span>
-                  )}
                 </div>
-                <h3 className="mb-1 text-base font-bold capitalize">
+
+                {/* Damage type */}
+                <h3 className="text-base font-bold capitalize">
                   {incident.damageType.replace("_", " ")}
                 </h3>
-                <p className="mb-1 text-sm">
-                  <span className="font-medium">Passability:</span>{" "}
-                  {incident.passabilityLevel.replace("_", " ")}
-                  {incident.isSingleLane && " (Single lane)"}
+
+                {/* Location */}
+                <p className="text-sm text-gray-700">
+                  {incident.roadLocation || `${incident.districtName}, ${incident.provinceName}`}
                 </p>
-                <p className="mb-2 text-sm">{incident.description}</p>
-                {incident.status === "resolved" && incident.resolvedAt && (
-                  <p className="mb-1 text-xs font-medium text-green-600">
-                    Fixed in {Math.round(
-                      (new Date(incident.resolvedAt).getTime() - new Date(incident.createdAt).getTime()) /
-                      (1000 * 60 * 60 * 24)
-                    )} days
+
+                {/* Passability - only show if notable */}
+                {incident.passabilityLevel && incident.passabilityLevel !== "unknown" && (
+                  <p className="mt-1.5 text-sm">
+                    <span className={incident.passabilityLevel === "unpassable" ? "text-red-600 font-medium" : "text-gray-600"}>
+                      {incident.passabilityLevel === "unpassable" ? "Unpassable" : `Passable by ${incident.passabilityLevel.replace("_", " ")}`}
+                    </span>
+                    {incident.isSingleLane && <span className="text-gray-500"> (single lane)</span>}
                   </p>
                 )}
-                <p className="text-xs text-gray-500">
-                  Reported: {new Date(incident.createdAt).toLocaleDateString()}
+
+                {/* Description - only if meaningful */}
+                {incident.description &&
+                 incident.description !== "No description provided" &&
+                 !incident.description.toLowerCase().includes("citizen report") && (
+                  <p className="mt-1.5 text-sm italic text-gray-600">"{incident.description}"</p>
+                )}
+
+                {/* Org assignment */}
+                {incident.orgName && (
+                  <p className="mt-1.5 text-xs text-blue-700">
+                    {incident.orgCode || incident.orgName}
+                  </p>
+                )}
+
+                {/* Timeline - compact */}
+                <p className="mt-2 text-xs text-gray-400">
+                  {incident.status === "resolved" && incident.resolvedAt ? (
+                    <>Resolved {new Date(incident.resolvedAt).toLocaleDateString()}</>
+                  ) : (
+                    <>Reported {new Date(incident.createdAt).toLocaleDateString()}</>
+                  )}
                 </p>
+
+                {/* Photos */}
+                <IncidentPopupPhotos reportId={incident.id} />
               </div>
             </Popup>
           </Marker>

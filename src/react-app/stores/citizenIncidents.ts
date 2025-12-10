@@ -7,10 +7,13 @@ export interface CitizenIncidentData {
   longitude: number;
   locationName: string | null;
   damageType: string;
+  severity: number | null;
   passabilityLevel: string | null;
   isSingleLane: boolean | null;
+  blockedDistanceMeters: number | null;
   description: string | null;
   createdAt: string;
+  updatedAt: string | null;
   reportNumber: string;
   districtName: string | null;
   provinceName: string | null;
@@ -18,6 +21,10 @@ export interface CitizenIncidentData {
   status: string;
   workflowData: string | null;
   resolvedAt: string | null;
+  inProgressAt: string | null;
+  assignedOrgId: string | null;
+  orgName: string | null;
+  orgCode: string | null;
 }
 
 export interface ProcessedIncident {
@@ -25,16 +32,22 @@ export interface ProcessedIncident {
   reportNumber: string;
   position: LatLngExpression;
   damageType: string;
+  severity: number | null;
   passabilityLevel: string;
   isSingleLane: boolean;
+  blockedDistanceMeters: number | null;
   description: string;
   createdAt: string;
+  updatedAt: string | null;
   districtName: string;
   provinceName: string;
   roadLocation: string | null;
   status: string;
   progressPercent: number;
   resolvedAt: string | null;
+  inProgressAt: string | null;
+  orgName: string | null;
+  orgCode: string | null;
 }
 
 interface CitizenIncidentsState {
@@ -71,16 +84,22 @@ function processIncidents(
         reportNumber: inc.reportNumber,
         position: [inc.latitude, inc.longitude] as LatLngExpression,
         damageType: inc.damageType || "other",
+        severity: inc.severity,
         passabilityLevel: inc.passabilityLevel || "unknown",
         isSingleLane: inc.isSingleLane ?? false,
+        blockedDistanceMeters: inc.blockedDistanceMeters,
         description: inc.description || "No description provided",
         createdAt: inc.createdAt,
+        updatedAt: inc.updatedAt,
         districtName: inc.districtName || "Unknown",
         provinceName: inc.provinceName || "Unknown",
         roadLocation: inc.roadLocation,
         status: inc.status,
         progressPercent,
         resolvedAt: inc.resolvedAt,
+        inProgressAt: inc.inProgressAt,
+        orgName: inc.orgName,
+        orgCode: inc.orgCode,
       };
     });
 }

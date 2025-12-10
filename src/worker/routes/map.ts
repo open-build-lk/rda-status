@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { createDb } from "../db";
-import { damageReports, roadSegments } from "../db/schema";
+import { damageReports, roadSegments, organizations } from "../db/schema";
 import { eq, and, desc, or, sql } from "drizzle-orm";
 import { snapToRoads, calculateMidpoint } from "../services/roadsService";
 
@@ -199,18 +199,26 @@ mapRoutes.get("/incidents", async (c) => {
       longitude: damageReports.longitude,
       locationName: damageReports.locationName,
       damageType: damageReports.damageType,
+      severity: damageReports.severity,
       passabilityLevel: damageReports.passabilityLevel,
       isSingleLane: damageReports.isSingleLane,
       needsSafetyBarriers: damageReports.needsSafetyBarriers,
+      blockedDistanceMeters: damageReports.blockedDistanceMeters,
       incidentDetails: damageReports.incidentDetails,
       description: damageReports.description,
       createdAt: damageReports.createdAt,
+      updatedAt: damageReports.updatedAt,
       reportNumber: damageReports.reportNumber,
       status: damageReports.status,
       workflowData: damageReports.workflowData,
       resolvedAt: damageReports.resolvedAt,
+      inProgressAt: damageReports.inProgressAt,
+      assignedOrgId: damageReports.assignedOrgId,
+      orgName: organizations.name,
+      orgCode: organizations.code,
     })
     .from(damageReports)
+    .leftJoin(organizations, eq(damageReports.assignedOrgId, organizations.id))
     .where(
       and(
         or(
