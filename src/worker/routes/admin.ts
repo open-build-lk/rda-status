@@ -857,7 +857,7 @@ const inviteUserSchema = z.object({
 
 const updateUserSchema = z.object({
   name: z.string().min(1).max(100).nullable().optional(),
-  role: z.enum(["citizen", "field_officer", "planner", "admin", "super_admin", "stakeholder"]).optional(),
+  role: z.enum(["citizen", "field_officer", "engineer", "planner", "admin", "super_admin", "stakeholder"]).optional(),
   isActive: z.boolean().optional(),
   designation: z.string().max(100).nullable().optional(),
   phone: z.string().max(20).nullable().optional(),
@@ -1004,26 +1004,29 @@ adminRoutes.post(
   async (c) => {
     const db = createDb(c.env.DB);
     const auth = getAuth(c);
-    const { email, role: rawRole, designation, note } = c.req.valid("json");
+    const { email: rawEmail, role: rawRole, designation, note } = c.req.valid("json");
+
+    // Normalize email to lowercase for deduplication
+    const email = rawEmail.toLowerCase().trim();
 
     // Normalize "engineer" to "field_officer" (engineer is an alias)
     const role = rawRole === "engineer" ? "field_officer" : rawRole;
 
-    // Check if user already exists
+    // Check if user already exists (case-insensitive via lowercase comparison)
     const [existingUser] = await db
       .select()
       .from(user)
-      .where(eq(user.email, email));
+      .where(sql`LOWER(${user.email}) = ${email}`);
 
     if (existingUser) {
       return c.json({ error: "User with this email already exists" }, 400);
     }
 
-    // Check if there's already a pending invitation
+    // Check if there's already a pending invitation (case-insensitive)
     const [existingInvite] = await db
       .select()
       .from(userInvitations)
-      .where(eq(userInvitations.email, email));
+      .where(sql`LOWER(${userInvitations.email}) = ${email}`);
 
     if (existingInvite && existingInvite.status === "pending") {
       return c.json({ error: "Pending invitation already exists for this email" }, 400);
@@ -1120,12 +1123,23 @@ adminRoutes.post(
 adminRoutes.patch(
   "/users/:id",
   requireRole("super_admin", "admin"),
-  zValidator("json", updateUserSchema),
+  zValidator("json", updateUserSchema, (result, c) => {
+    if (!result.success) {
+      const firstError = result.error.errors[0];
+      return c.json({ error: firstError?.message || "Invalid request data" }, 400);
+    }
+  }),
   async (c) => {
     const db = createDb(c.env.DB);
     const auth = getAuth(c);
     const { id } = c.req.param();
-    const updates = c.req.valid("json");
+    const rawUpdates = c.req.valid("json");
+
+    // Normalize "engineer" to "field_officer" (engineer is an alias)
+    const updates = {
+      ...rawUpdates,
+      role: rawUpdates.role === "engineer" ? "field_officer" : rawUpdates.role,
+    };
 
     // Check if user exists
     const [existingUser] = await db
@@ -1163,13 +1177,21 @@ adminRoutes.patch(
       { targetEmail: existingUser.email }
     );
 
-    // Build update object
+    // Build update object - only include fields that have actual values
+    // Note: name has NOT NULL constraint, so skip empty strings
     const updateData: Record<string, unknown> = { updatedAt: new Date() };
-    if (updates.name !== undefined) updateData.name = updates.name;
+    if (updates.name !== undefined && updates.name !== null && updates.name !== "") {
+      updateData.name = updates.name;
+    }
     if (updates.role !== undefined) updateData.role = updates.role;
     if (updates.isActive !== undefined) updateData.isActive = updates.isActive;
-    if (updates.designation !== undefined) updateData.designation = updates.designation;
-    if (updates.phone !== undefined) updateData.phone = updates.phone;
+    // For nullable fields, allow empty string to be saved as null
+    if (updates.designation !== undefined) {
+      updateData.designation = updates.designation || null;
+    }
+    if (updates.phone !== undefined) {
+      updateData.phone = updates.phone || null;
+    }
 
     await db
       .update(user)
