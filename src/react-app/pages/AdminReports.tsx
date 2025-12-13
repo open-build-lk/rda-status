@@ -51,12 +51,14 @@ import {
   Check,
   X,
   Building2,
+  Download,
 } from "lucide-react";
 import { ReportCard } from "@/components/admin/ReportCard";
 import { RejectReasonSheet } from "@/components/admin/RejectReasonSheet";
 import { UpdateProgressSheet } from "@/components/admin/UpdateProgressSheet";
 import { ClassifyReportSheet } from "@/components/admin/ClassifyReportSheet";
 import { StatusSummary } from "@/components/admin/StatusSummary";
+import { ExportReportsDialog } from "@/components/admin/ExportReportsDialog";
 import { provinces } from "@/data/sriLankaLocations";
 import { useAuthStore } from "@/stores/auth";
 
@@ -193,6 +195,9 @@ export function AdminReports() {
 
   // Classify sheet state
   const [classifyingReport, setClassifyingReport] = useState<Report | null>(null);
+
+  // Export dialog state
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
   // Save view preference
   useEffect(() => {
@@ -815,6 +820,17 @@ export function AdminReports() {
               className="flex-1 max-w-[200px]"
             />
           </div>
+
+          {/* Export button - pushed to right */}
+          <Button
+            variant="outline"
+            onClick={() => setExportDialogOpen(true)}
+            disabled={reports.length === 0}
+            className="ml-auto"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Export to Excel
+          </Button>
         </div>
 
         {/* Status summary */}
@@ -1283,6 +1299,21 @@ export function AdminReports() {
           onMarkUnclassifiable={handleMarkUnclassifiable}
         />
       )}
+
+      {/* Export Reports Dialog */}
+      <ExportReportsDialog
+        open={exportDialogOpen}
+        onOpenChange={setExportDialogOpen}
+        reports={reports}
+        filteredReports={filteredReports}
+        table={table}
+        currentFilters={{
+          province: selectedProvince,
+          district: selectedDistrict,
+          status: selectedStatus || undefined,
+          organization: selectedOrgId,
+        }}
+      />
     </div>
   );
 }
