@@ -182,8 +182,8 @@ mapRoutes.get("/segments/verified", async (c) => {
   return c.json(formatted);
 });
 
-// GET /api/v1/map/incidents - Get approved citizen incident reports for map display
-// Includes resolved items within the last 365 days
+// GET /api/v1/map/incidents - Get all verified incident reports for public map display
+// Includes verified, in_progress, and resolved (within last 365 days) reports from all sources
 mapRoutes.get("/incidents", async (c) => {
   const db = createDb(c.env.DB);
 
@@ -220,17 +220,14 @@ mapRoutes.get("/incidents", async (c) => {
     .from(damageReports)
     .leftJoin(organizations, eq(damageReports.assignedOrgId, organizations.id))
     .where(
-      and(
-        or(
-          eq(damageReports.status, "verified"),
-          eq(damageReports.status, "in_progress"),
-          // Include resolved items within last 365 days
-          and(
-            eq(damageReports.status, "resolved"),
-            sql`${damageReports.resolvedAt} >= ${oneYearAgoTimestamp}`
-          )
-        ),
-        eq(damageReports.sourceType, "citizen")
+      or(
+        eq(damageReports.status, "verified"),
+        eq(damageReports.status, "in_progress"),
+        // Include resolved items within last 365 days
+        and(
+          eq(damageReports.status, "resolved"),
+          sql`${damageReports.resolvedAt} >= ${oneYearAgoTimestamp}`
+        )
       )
     )
     .orderBy(desc(damageReports.createdAt));

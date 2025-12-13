@@ -521,14 +521,31 @@ adminRoutes.patch(
       });
     }
 
-    // Handle locationName - just save it directly without combining with province/district
-    // Province and district are UI-only for now (FK constraints prevent saving to provinceId/districtId)
-    if (updates.locationName !== undefined && updates.locationName !== report.locationName) {
-      updateData.locationName = updates.locationName;
+    // Handle locationName with auto-formatting
+    // Auto-format location name to include (district, province) if available in workflowData
+    let formattedLocationName = updates.locationName;
+
+    if (formattedLocationName !== undefined && formattedLocationName !== null) {
+      // Get province/district from updates.workflowData or existing report.workflowData
+      const existingWorkflow = report.workflowData ? JSON.parse(report.workflowData as string) : {};
+      const newWorkflow = updates.workflowData || {};
+      const province = newWorkflow.province || existingWorkflow.province;
+      const district = newWorkflow.district || existingWorkflow.district;
+
+      // Auto-format if province and district exist and location name doesn't have parentheses
+      if (province && district && formattedLocationName) {
+        if (!formattedLocationName.includes('(') || !formattedLocationName.includes(')')) {
+          formattedLocationName = `${formattedLocationName} (${district}, ${province})`;
+        }
+      }
+    }
+
+    if (formattedLocationName !== undefined && formattedLocationName !== report.locationName) {
+      updateData.locationName = formattedLocationName;
       auditEntries.push({
         fieldName: "locationName",
         oldValue: report.locationName,
-        newValue: updates.locationName,
+        newValue: formattedLocationName,
       });
     }
 
@@ -1925,6 +1942,88 @@ adminRoutes.get(
         hasNext: page * limit < totalCount,
         hasPrev: page > 1,
       },
+    });
+  }
+);
+
+// POST /api/v1/admin/fix-location-names - Fix location names to include (district, province) format
+adminRoutes.post(
+  "/fix-location-names",
+  requireRole("admin", "super_admin"),
+  async (c) => {
+    const db = createDb(c.env.DB);
+
+    // Get all reports with provinceId and districtId but locationName doesn't have parentheses
+    const reportsToFix = await db
+      .select({
+        id: damageReports.id,
+        locationName: damageReports.locationName,
+        provinceId: damageReports.provinceId,
+        districtId: damageReports.districtId,
+      })
+      .from(damageReports)
+      .where(
+        and(
+          sql`${damageReports.provinceId} IS NOT NULL`,
+          sql`${damageReports.districtId} IS NOT NULL`,
+          sql`${damageReports.locationName} IS NOT NULL`
+        )
+      );
+
+    // Create aliases for location lookups
+    const provinceLocation = alias(locations, "province_location");
+    const districtLocation = alias(locations, "district_location");
+
+    let fixedCount = 0;
+    const updates: Array<{ id: string; oldName: string; newName: string }> = [];
+
+    for (const report of reportsToFix) {
+      // Check if location name already has the (district, province) format
+      if (report.locationName && report.locationName.includes('(') && report.locationName.includes(')')) {
+        continue; // Already formatted, skip
+      }
+
+      // Get province and district names
+      const [provinceData] = await db
+        .select({ nameEn: provinceLocation.nameEn })
+        .from(provinceLocation)
+        .where(eq(provinceLocation.id, report.provinceId!));
+
+      const [districtData] = await db
+        .select({ nameEn: districtLocation.nameEn })
+        .from(districtLocation)
+        .where(eq(districtLocation.id, report.districtId!));
+
+      if (!provinceData || !districtData) {
+        continue; // Skip if location data not found
+      }
+
+      // Format: "Road Name (district, province)"
+      const newLocationName = `${report.locationName} (${districtData.nameEn}, ${provinceData.nameEn})`;
+
+      // Update the report
+      await db
+        .update(damageReports)
+        .set({
+          locationName: newLocationName,
+          updatedAt: new Date()
+        })
+        .where(eq(damageReports.id, report.id));
+
+      updates.push({
+        id: report.id,
+        oldName: report.locationName!,
+        newName: newLocationName,
+      });
+
+      fixedCount++;
+    }
+
+    return c.json({
+      success: true,
+      fixedCount,
+      totalChecked: reportsToFix.length,
+      updates,
     });
   }
 );
