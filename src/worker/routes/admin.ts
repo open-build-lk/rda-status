@@ -2028,4 +2028,77 @@ adminRoutes.post(
   }
 );
 
+// POST /api/v1/admin/auto-verify-trusted-reports - Auto-verify reports from trusted users
+adminRoutes.post(
+  "/auto-verify-trusted-reports",
+  requireRole("admin", "super_admin"),
+  async (c) => {
+    const db = createDb(c.env.DB);
+
+    // Get all "new" status reports that have a submitter (not anonymous)
+    // and where the submitter is not a citizen
+    const unverifiedReports = await db
+      .select({
+        id: damageReports.id,
+        reportNumber: damageReports.reportNumber,
+        submitterId: damageReports.submitterId,
+        sourceType: damageReports.sourceType,
+        status: damageReports.status,
+      })
+      .from(damageReports)
+      .leftJoin(user, eq(damageReports.submitterId, user.id))
+      .where(
+        and(
+          eq(damageReports.status, "new"),
+          sql`${damageReports.submitter_id} IS NOT NULL`
+        )
+      );
+
+    // For each report, check if submitter is a trusted user
+    let verifiedCount = 0;
+    const verifiedReports: Array<{ id: string; reportNumber: string; userRole: string }> = [];
+
+    for (const report of unverifiedReports) {
+      if (!report.submitterId) continue;
+
+      // Get user details
+      const [submitter] = await db
+        .select({ role: user.role })
+        .from(user)
+        .where(eq(user.id, report.submitterId));
+
+      if (!submitter) continue;
+
+      // Check if user is a trusted submitter (not a citizen)
+      const isTrusted = submitter.role && submitter.role !== "citizen";
+
+      if (isTrusted) {
+        // Update report status to verified
+        await db
+          .update(damageReports)
+          .set({
+            status: "verified",
+            updatedAt: new Date(),
+          })
+          .where(eq(damageReports.id, report.id));
+
+        verifiedReports.push({
+          id: report.id,
+          reportNumber: report.reportNumber,
+          userRole: submitter.role,
+        });
+
+        verifiedCount++;
+      }
+    }
+
+    return c.json({
+      success: true,
+      verifiedCount,
+      totalChecked: unverifiedReports.length,
+      verifiedReports,
+    });
+  }
+);
+
 export { adminRoutes };
