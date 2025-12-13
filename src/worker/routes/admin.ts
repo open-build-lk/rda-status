@@ -3,7 +3,7 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { createDb } from "../db";
 import { damageReports, roadSegments, mediaAttachments, user, userInvitations, locations, organizations, classificationHistory, userOrganizations, stateTransitions, session, account, verification } from "../db/schema";
-import { eq, desc, or, isNull, and, sql } from "drizzle-orm";
+import { eq, desc, or, isNull, isNotNull, and, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { sendEmail, getInvitationEmailHtml } from "../services/email";
 import { recordAuditEntries, createFieldChangeEntries } from "../services/audit";
@@ -2050,7 +2050,7 @@ adminRoutes.post(
       .where(
         and(
           eq(damageReports.status, "new"),
-          sql`${damageReports.submitter_id} IS NOT NULL`
+          isNotNull(damageReports.submitterId)
         )
       );
 
