@@ -98,6 +98,8 @@ interface Report {
   assignedOrgId: string | null;
   assignedOrgName?: string | null;
   assignedOrgCode?: string | null;
+  // Manual location flag
+  locationPickedManually?: boolean | number | null;
 }
 
 interface Organization {

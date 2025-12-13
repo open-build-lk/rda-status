@@ -171,6 +171,8 @@ const createReportSchema = z.object({
   // Flexible incident details (new way - any additional fields go here)
   incidentDetails: z.record(z.unknown()).optional(),
   mediaKeys: z.array(z.string()).max(20).optional(), // R2 storage keys for uploaded photos
+  // Flag for manually picked location (when photos lack GPS data)
+  locationPickedManually: z.boolean().optional(),
 });
 
 const claimReportSchema = z.object({
@@ -325,8 +327,8 @@ reportsRoutes.post(
           is_single_lane, needs_safety_barriers, blocked_distance_meters,
           incident_details, submission_source, is_verified_submitter, claim_token,
           road_id, road_number_input, road_class, assigned_org_id, classification_status, classified_at,
-          created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          location_picked_manually, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).bind(
         insertValues.id,
         insertValues.reportNumber,
@@ -359,6 +361,7 @@ reportsRoutes.post(
         assignedOrgId,
         classificationStatus,
         classifiedAtTs,
+        data.locationPickedManually ? 1 : 0,
         createdAtTs,
         updatedAtTs
       ).run();

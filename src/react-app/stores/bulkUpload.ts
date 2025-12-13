@@ -59,6 +59,8 @@ export interface BulkIncident {
   incidentDetails: IncidentDetails;
   description: string;
   isComplete: boolean;
+  // Manual location tracking (for photos without GPS)
+  locationPickedManually: boolean;
 }
 
 export interface BulkSubmissionResult {
@@ -102,6 +104,7 @@ interface BulkUploadActions {
   // Incident actions
   updateIncident: (groupId: string, data: Partial<BulkIncident>) => void;
   setCurrentIndex: (index: number) => void;
+  createIncidentFromOrphans: (photoIds: string[], location: { lat: number; lng: number; address?: string }) => void;
 
   // Step navigation
   setStep: (step: BulkUploadState["currentStep"]) => void;
@@ -175,6 +178,7 @@ export const useBulkUploadStore = create<BulkUploadState & BulkUploadActions>()(
               },
               description: "",
               isComplete: false,
+              locationPickedManually: false,
             };
           }),
           orphanedPhotos: orphaned,
@@ -261,6 +265,55 @@ export const useBulkUploadStore = create<BulkUploadState & BulkUploadActions>()(
         })),
 
       setCurrentIndex: (index) => set({ currentIncidentIndex: index }),
+
+      createIncidentFromOrphans: (photoIds, location) => {
+        const state = get();
+        // Find the photos from orphanedPhotos
+        const photosToUse = state.orphanedPhotos.filter((p) =>
+          photoIds.includes(p.id)
+        );
+        if (photosToUse.length === 0) return;
+
+        // Find earliest timestamp
+        const timestamps = photosToUse
+          .map((p) => p.timestamp)
+          .filter((t): t is Date => t !== null);
+        const earliestDate =
+          timestamps.length > 0
+            ? new Date(Math.min(...timestamps.map((t) => t.getTime())))
+            : null;
+
+        // Create new incident
+        const newIncident: BulkIncident = {
+          groupId: `manual-${Date.now()}`,
+          photos: photosToUse,
+          centroid: { latitude: location.lat, longitude: location.lng },
+          incidentDate: earliestDate,
+          province: null,
+          district: null,
+          roadNumberInput: "",
+          selectedRoad: null,
+          locationName: location.address || "",
+          damageType: null,
+          passabilityLevel: null,
+          incidentDetails: {
+            isSingleLane: false,
+            needsSafetyBarriers: false,
+            blockedDistanceMeters: null,
+          },
+          description: "",
+          isComplete: false,
+          locationPickedManually: true,
+        };
+
+        // Remove photos from orphaned and add new incident
+        set({
+          orphanedPhotos: state.orphanedPhotos.filter(
+            (p) => !photoIds.includes(p.id)
+          ),
+          incidents: [...state.incidents, newIncident],
+        });
+      },
 
       setStep: (step) => set({ currentStep: step }),
 
