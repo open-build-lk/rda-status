@@ -261,7 +261,16 @@ reportsRoutes.post(
     const sourceType = isTrustedSubmitter ? "field_officer" : "citizen";
 
     // Use user-provided location name or fall back to reverse geocoding
-    const locationName = data.locationName || await reverseGeocode(data.latitude, data.longitude);
+    let locationName = data.locationName || await reverseGeocode(data.latitude, data.longitude);
+
+    // Auto-format location name to include (district, province) if not already formatted
+    // Format: "Road Name (district, province)"
+    if (locationName && data.province && data.district) {
+      // Check if location name doesn't already have parentheses
+      if (!locationName.includes('(') || !locationName.includes(')')) {
+        locationName = `${locationName} (${data.district}, ${data.province})`;
+      }
+    }
 
     // Store province/district in workflowData JSON (not in locationName to avoid corruption)
     const workflowData = JSON.stringify({
