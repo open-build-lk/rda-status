@@ -128,6 +128,14 @@ export const useCitizenIncidentsStore = create<
       const rawIncidents = (await res.json()) as CitizenIncidentData[];
       const incidents = processIncidents(rawIncidents);
 
+      console.log(`[DisasterMap] Fetched ${rawIncidents.length} total incidents`);
+      console.log(`[DisasterMap] Processed ${incidents.length} incidents with valid coordinates`);
+      console.log(`[DisasterMap] Status breakdown:`, {
+        verified: rawIncidents.filter(r => r.status === "verified").length,
+        in_progress: rawIncidents.filter(r => r.status === "in_progress").length,
+        resolved: rawIncidents.filter(r => r.status === "resolved").length,
+      });
+
       set({
         rawIncidents,
         incidents,
