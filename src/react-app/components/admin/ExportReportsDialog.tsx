@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Loader2, Download } from "lucide-react";
-import { exportToExcel, getExportableFields } from "@/lib/exportToExcel";
+import { exportToExcel } from "@/lib/exportToExcel";
 
 interface Report {
   id: string;
@@ -33,6 +33,8 @@ interface Report {
   workflowData: string | null;
   createdAt: string;
   updatedAt: string;
+  provinceId: string | null;
+  districtId: string | null;
   provinceName: string | null;
   districtName: string | null;
   roadLocation: string | null;
@@ -40,10 +42,12 @@ interface Report {
   roadNumberInput: string | null;
   roadClass: string | null;
   classificationStatus: string | null;
+  assignedOrgId: string | null;
   assignedOrgName?: string | null;
   assignedOrgCode?: string | null;
   resolvedAt?: string | null;
   inProgressAt?: string | null;
+  locationPickedManually?: boolean | number | null;
 }
 
 interface ExportReportsDialogProps {
