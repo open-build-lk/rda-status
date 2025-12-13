@@ -160,6 +160,7 @@ adminRoutes.get("/reports", requireRole("field_officer", "planner", "admin", "su
       districtId: damageReports.districtId,
       provinceName: provinceLocation.nameEn,
       districtName: districtLocation.nameEn,
+      locationPickedManually: damageReports.locationPickedManually,
     })
     .from(damageReports)
     .leftJoin(provinceLocation, eq(damageReports.provinceId, provinceLocation.id))
@@ -221,6 +222,7 @@ adminRoutes.get("/reports/unverified", requireRole("field_officer", "planner", "
       anonymousEmail: damageReports.anonymousEmail,
       anonymousContact: damageReports.anonymousContact,
       sourceType: damageReports.sourceType,
+      locationPickedManually: damageReports.locationPickedManually,
     })
     .from(damageReports)
     .where(eq(damageReports.status, "new"))

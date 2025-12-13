@@ -124,6 +124,8 @@ export const damageReports = sqliteTable(
     // Resolution tracking timestamps
     resolvedAt: integer("resolved_at", { mode: "timestamp" }),
     inProgressAt: integer("in_progress_at", { mode: "timestamp" }),
+    // Manual location tracking
+    locationPickedManually: integer("location_picked_manually", { mode: "boolean" }).default(false),
   },
   (table) => [
     index("reports_status_idx").on(table.status),

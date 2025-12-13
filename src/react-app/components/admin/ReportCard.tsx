@@ -3,6 +3,7 @@ import { formatDistanceToNow } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   MapPin,
+  MapPinned,
   Camera,
   MoreHorizontal,
   Check,
@@ -42,6 +43,8 @@ interface Report {
   roadNumberInput?: string | null;
   roadClass?: string | null;
   classificationStatus?: string | null;
+  // Manual location flag
+  locationPickedManually?: boolean | number | null;
 }
 
 interface ReportCardProps {
@@ -242,6 +245,12 @@ export function ReportCard({
         <div className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400 mb-2">
           <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
           <span className="truncate">{location}</span>
+          {Boolean(report.locationPickedManually) && (
+            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 rounded text-xs flex-shrink-0">
+              <MapPinned className="h-3 w-3" />
+              Manual
+            </span>
+          )}
         </div>
 
         {/* Time and photos */}

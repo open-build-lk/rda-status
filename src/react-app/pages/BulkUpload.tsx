@@ -1,12 +1,13 @@
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Upload, AlertCircle, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Upload, AlertCircle, Trash2, MapPinned } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileDropZone } from "@/components/bulk-upload/FileDropZone";
 import { PhotoPreviewGrid } from "@/components/bulk-upload/PhotoPreviewGrid";
 import { GroupReviewCard } from "@/components/bulk-upload/GroupReviewCard";
 import { SubmissionProgress } from "@/components/bulk-upload/SubmissionProgress";
+import { LocationPickerModal } from "@/components/bulk-upload/LocationPickerModal";
 import { extractBatch } from "@/lib/exif-utils";
 import { groupPhotosByLocation } from "@/lib/location-grouping";
 import {
@@ -21,6 +22,8 @@ const MAX_PHOTOS = 50;
 export function BulkUpload() {
   const navigate = useNavigate();
   const [expandedIndex, setExpandedIndex] = useState(0);
+  const [selectedOrphanIds, setSelectedOrphanIds] = useState<string[]>([]);
+  const [isOrphanLocationPickerOpen, setIsOrphanLocationPickerOpen] = useState(false);
   const { user } = useAuthStore();
 
   // Determine sourceType based on user role
@@ -49,6 +52,7 @@ export function BulkUpload() {
     setSubmitError,
     clearSubmissionState,
     reset,
+    createIncidentFromOrphans,
   } = useBulkUploadStore();
 
   // Handle file selection
@@ -158,6 +162,8 @@ export function BulkUpload() {
           incidentDetails: incident.incidentDetails,
           description: incident.description || undefined,
           mediaKeys: uploadedKeys,
+          // Flag for manually picked location
+          locationPickedManually: incident.locationPickedManually || false,
         };
 
         const reportResponse = await fetch("/api/v1/reports", {
@@ -285,6 +291,8 @@ export function BulkUpload() {
             incidentDetails: incident.incidentDetails,
             description: incident.description || undefined,
             mediaKeys: allKeys,
+            // Flag for manually picked location
+            locationPickedManually: incident.locationPickedManually || false,
           };
 
           const reportResponse = await fetch("/api/v1/reports", {
@@ -334,6 +342,32 @@ export function BulkUpload() {
   // Calculate ready count
   const readyCount = incidents.filter((inc) => inc.isComplete).length;
   const hasGpsPhotos = allPhotos.some((p) => p.gps !== null);
+
+  // Non-citizen users can proceed without GPS photos (they can pick location manually)
+  const canPickLocationManually = user && user.role !== "citizen";
+  const canProceedToReview = allPhotos.length > 0 && (hasGpsPhotos || canPickLocationManually);
+
+  // Toggle orphan photo selection
+  const toggleOrphanSelection = (photoId: string) => {
+    setSelectedOrphanIds((prev) =>
+      prev.includes(photoId)
+        ? prev.filter((id) => id !== photoId)
+        : [...prev, photoId]
+    );
+  };
+
+  // Select all orphaned photos
+  const selectAllOrphans = () => {
+    setSelectedOrphanIds(orphanedPhotos.map((p) => p.id));
+  };
+
+  // Handle location confirmation for orphaned photos
+  const handleOrphanLocationConfirm = (location: { lat: number; lng: number; address?: string }) => {
+    if (selectedOrphanIds.length === 0) return;
+    createIncidentFromOrphans(selectedOrphanIds, location);
+    setSelectedOrphanIds([]);
+    setIsOrphanLocationPickerOpen(false);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -424,11 +458,16 @@ export function BulkUpload() {
 
             {/* Warning for no GPS */}
             {allPhotos.length > 0 && !hasGpsPhotos && (
-              <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-100">
+              <div className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-sm ${
+                canPickLocationManually
+                  ? "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-900/20 dark:text-blue-100"
+                  : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-100"
+              }`}>
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>
-                  No photos have GPS data. Please select photos with location
-                  information, or they won't be grouped into incidents.
+                  {canPickLocationManually
+                    ? "No photos have GPS data. You can proceed and pick locations manually on the map."
+                    : "No photos have GPS data. Please select photos with location information, or they won't be grouped into incidents."}
                 </span>
               </div>
             )}
@@ -458,16 +497,107 @@ export function BulkUpload() {
               </CardContent>
             </Card>
 
-            {/* Orphaned photos warning */}
+            {/* Orphaned photos section */}
             {orphanedPhotos.length > 0 && (
-              <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-100">
-                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                <span>
-                  {orphanedPhotos.length} photo
-                  {orphanedPhotos.length !== 1 ? "s" : ""} without GPS data were
-                  not included in any group.
-                </span>
-              </div>
+              <Card>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4 text-amber-500" />
+                      Photos Without GPS ({orphanedPhotos.length})
+                    </CardTitle>
+                    {canPickLocationManually && orphanedPhotos.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={selectAllOrphans}
+                        className="text-xs"
+                      >
+                        Select All
+                      </Button>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {canPickLocationManually ? (
+                    <>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                        Select photos and pick a location to create an incident.
+                      </p>
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {orphanedPhotos.map((photo) => (
+                          <div
+                            key={photo.id}
+                            onClick={() => toggleOrphanSelection(photo.id)}
+                            className={clsx(
+                              "relative h-16 w-16 cursor-pointer rounded-lg overflow-hidden border-2 transition-all",
+                              selectedOrphanIds.includes(photo.id)
+                                ? "border-primary-500 ring-2 ring-primary-200"
+                                : "border-gray-200 dark:border-gray-700 hover:border-gray-300"
+                            )}
+                          >
+                            <img
+                              src={photo.preview}
+                              alt=""
+                              className="h-full w-full object-cover"
+                            />
+                            {selectedOrphanIds.includes(photo.id) && (
+                              <div className="absolute inset-0 bg-primary-500/20 flex items-center justify-center">
+                                <div className="w-5 h-5 bg-primary-500 rounded-full flex items-center justify-center">
+                                  <span className="text-white text-xs">✓</span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      {selectedOrphanIds.length > 0 && (
+                        <div className="space-y-2">
+                          <Button
+                            onClick={() => setIsOrphanLocationPickerOpen(true)}
+                            className="w-full"
+                            size="sm"
+                          >
+                            <MapPinned className="h-4 w-4 mr-2" />
+                            Pick Location for {selectedOrphanIds.length} Photo{selectedOrphanIds.length !== 1 ? "s" : ""}
+                          </Button>
+                          {/* Copy from existing incident option */}
+                          {incidents.filter(inc => inc.centroid.latitude !== 0).length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              <span className="text-xs text-gray-500 w-full">Or use location from:</span>
+                              {incidents
+                                .filter(inc => inc.centroid.latitude !== 0)
+                                .map((inc, idx) => (
+                                  <Button
+                                    key={inc.groupId}
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-xs h-7"
+                                    onClick={() => {
+                                      createIncidentFromOrphans(selectedOrphanIds, {
+                                        lat: inc.centroid.latitude,
+                                        lng: inc.centroid.longitude,
+                                        address: inc.locationName,
+                                      });
+                                      setSelectedOrphanIds([]);
+                                    }}
+                                  >
+                                    Location {idx + 1}
+                                    {inc.locationName && ` (${inc.locationName.slice(0, 20)}${inc.locationName.length > 20 ? "..." : ""})`}
+                                  </Button>
+                                ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-sm text-amber-700 dark:text-amber-100">
+                      These photos cannot be included without GPS data.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
             )}
 
             {/* Group cards */}
@@ -521,13 +651,13 @@ export function BulkUpload() {
         )}
 
         {/* Action buttons - in scrollable content */}
-        {currentStep === "select" && hasGpsPhotos && (
+        {currentStep === "select" && canProceedToReview && (
           <Button
             onClick={handleProceedToReview}
             disabled={isProcessing}
             className="w-full min-h-[48px] text-base"
           >
-            Group by Location
+            {hasGpsPhotos ? "Group by Location" : "Continue to Review"}
             <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
         )}
@@ -553,6 +683,13 @@ export function BulkUpload() {
           </div>
         )}
       </div>
+
+      {/* Location picker modal for orphaned photos */}
+      <LocationPickerModal
+        isOpen={isOrphanLocationPickerOpen}
+        onClose={() => setIsOrphanLocationPickerOpen(false)}
+        onConfirm={handleOrphanLocationConfirm}
+      />
     </div>
   );
 }

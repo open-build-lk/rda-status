@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { MapPin, ChevronDown, ChevronUp, Check, ExternalLink, Calendar } from "lucide-react";
+import { MapPin, ChevronDown, ChevronUp, Check, ExternalLink, Calendar, MapPinned, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -14,12 +15,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { IncidentCategorySelect } from "@/components/forms/IncidentCategorySelect";
 import { PassabilityScale } from "@/components/forms/PassabilityScale";
 import { RoadNumberInput } from "@/components/forms/RoadNumberInput";
+import { LocationPickerModal } from "./LocationPickerModal";
 import {
   provinces,
   getDistrictsForProvince,
   findProvinceByCoords,
 } from "@/data/sriLankaLocations";
 import type { BulkIncident } from "@/stores/bulkUpload";
+import { useAuthStore } from "@/stores/auth";
 import clsx from "clsx";
 
 interface GroupReviewCardProps {
@@ -40,11 +43,31 @@ export function GroupReviewCard({
   onUpdate,
 }: GroupReviewCardProps) {
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+  const [isLocationPickerOpen, setIsLocationPickerOpen] = useState(false);
+
+  // Get user role to check if they can manually pick location
+  const { user } = useAuthStore();
+  const canPickLocationManually = user && user.role !== "citizen";
+
+  // Check if any photo in this group has GPS data
+  const hasGpsData = incident.photos.some((p) => p.gps !== null);
+  // Check if location was manually picked or needs to be picked
+  const needsManualLocation = !hasGpsData && incident.centroid.latitude === 0 && incident.centroid.longitude === 0;
 
   // Store onUpdate in a ref to avoid re-running effects when the callback changes
   // (since it's an inline function in the parent that gets recreated every render)
   const onUpdateRef = useRef(onUpdate);
   onUpdateRef.current = onUpdate;
+
+  // Handle location confirmation from picker
+  const handleLocationConfirm = (location: { lat: number; lng: number; address?: string }) => {
+    onUpdateRef.current({
+      centroid: { latitude: location.lat, longitude: location.lng },
+      locationName: location.address || "",
+      locationPickedManually: true,
+    });
+    setIsLocationPickerOpen(false);
+  };
 
   // Import the SelectedRoad type from bulkUpload store
   type SelectedRoadType = NonNullable<BulkIncident["selectedRoad"]>;
@@ -307,38 +330,82 @@ export function GroupReviewCard({
 
           {/* Location info */}
           <div className="space-y-3">
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
-              <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
-                <span>
-                  {incident.centroid.latitude.toFixed(5)},{" "}
-                  {incident.centroid.longitude.toFixed(5)}
-                </span>
-                <a
-                  href={`https://www.google.com/maps?q=${incident.centroid.latitude},${incident.centroid.longitude}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary-600 hover:underline flex items-center gap-1"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  View <ExternalLink className="h-3 w-3" />
-                </a>
-              </div>
-              {incident.incidentDate && (
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  <span>
-                    {new Date(incident.incidentDate).toLocaleDateString(undefined, {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
+            {/* Show warning and pick location button if no GPS data */}
+            {needsManualLocation && canPickLocationManually && (
+              <div className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                  <AlertTriangle className="h-4 w-4" />
+                  <span className="text-sm font-medium">No GPS data in photos</span>
                 </div>
-              )}
-            </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-amber-300 text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-400 dark:hover:bg-amber-900/40"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsLocationPickerOpen(true);
+                  }}
+                >
+                  <MapPinned className="h-4 w-4 mr-1.5" />
+                  Pick Location
+                </Button>
+              </div>
+            )}
+
+            {/* Show location details when we have coordinates */}
+            {(hasGpsData || incident.centroid.latitude !== 0) && (
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  <span>
+                    {incident.centroid.latitude.toFixed(5)},{" "}
+                    {incident.centroid.longitude.toFixed(5)}
+                  </span>
+                  {incident.locationPickedManually && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 rounded-full text-xs font-medium">
+                      <MapPinned className="h-3 w-3" />
+                      Manual
+                    </span>
+                  )}
+                  <a
+                    href={`https://www.google.com/maps?q=${incident.centroid.latitude},${incident.centroid.longitude}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary-600 hover:underline flex items-center gap-1"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    View <ExternalLink className="h-3 w-3" />
+                  </a>
+                  {canPickLocationManually && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 px-2 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsLocationPickerOpen(true);
+                      }}
+                    >
+                      Edit
+                    </Button>
+                  )}
+                </div>
+                {incident.incidentDate && (
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    <span>
+                      {new Date(incident.incidentDate).toLocaleDateString(undefined, {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
@@ -520,6 +587,18 @@ export function GroupReviewCard({
           </div>
         </CardContent>
       )}
+
+      {/* Location Picker Modal */}
+      <LocationPickerModal
+        isOpen={isLocationPickerOpen}
+        onClose={() => setIsLocationPickerOpen(false)}
+        onConfirm={handleLocationConfirm}
+        initialCenter={
+          incident.centroid.latitude !== 0 && incident.centroid.longitude !== 0
+            ? [incident.centroid.latitude, incident.centroid.longitude]
+            : undefined
+        }
+      />
     </Card>
   );
 }
