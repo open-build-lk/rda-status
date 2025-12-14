@@ -9,6 +9,7 @@ import {
 import { DivIcon, LatLngExpression } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { DAMAGE_ICONS } from "./DisasterMap";
+import { IncidentPopupPhotos } from "./IncidentPopupPhotos";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -241,6 +242,9 @@ export function UnverifiedReportsMap({ onReportSelect, selectedReportId }: Unver
                   <p className="text-xs text-gray-500">
                     {new Date(report.createdAt).toLocaleString()}
                   </p>
+
+                  {/* Photos */}
+                  <IncidentPopupPhotos reportId={report.id} />
                 </div>
               </Popup>
             </Marker>
